@@ -78,21 +78,21 @@ void myGlutMotion(int x, int y) {
     for (int i = 0; i < points.size(); ++i) {
         if (pressed[i]) {
             points[i].x += x - mouse.x;
-            points[i].y += y - mouse.y;
+            points[i].y += sy - y - mouse.y;
         }
     }
     
     //std::cout << x << "  " << y << std::endl;
 
     mouse.x = x;
-    mouse.y = y;
+    mouse.y = sy - y;
 
     glutPostRedisplay();
 }
 
 void myGlutPassiveMotion(int x, int y) {
     mouse.x = x;
-    mouse.y = y;
+    mouse.y = sy - y;
     
     for (int i = 0; i < points.size(); ++i) {
         pressed[i] = false;
@@ -194,30 +194,6 @@ int main(int argc, char* argv[]) {
     glutPassiveMotionFunc( myGlutPassiveMotion );    
     glutMouseFunc( myGlutMouse );
 
-    /****************************************/
-    /*       Set up OpenGL lights           */
-    /****************************************/
-
-    //GLfloat light0_ambient[] =  {0.1f, 0.1f, 0.3f, 1.0f};
-    //GLfloat light0_diffuse[] =  {.6f, .6f, 1.0f, 1.0f};
-    //GLfloat light0_position[] = {1.0f, 1.0f, 1.0f, 0.0f};
-
-    //glEnable(GL_LIGHTING);
-    //glEnable(GL_LIGHT0);
-    //glLightfv(GL_LIGHT0, GL_AMBIENT, light0_ambient);
-    //glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
-    //glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
-
-    /****************************************/
-    /*          Enable z-buferring          */
-    /****************************************/
-
-    //glEnable(GL_DEPTH_TEST);
-
-    /****************************************/
-    /*         Here's the GLUI code         */
-    /****************************************/
-
     GLUI *glui = GLUI_Master.create_glui( "GLUI", 0, 800, 50 ); /* name, flags, x, and y */
     
     new GLUI_Checkbox(glui, "Bisector", 0, 0, bisector_cb);
@@ -228,7 +204,6 @@ int main(int argc, char* argv[]) {
     glui->set_main_gfx_window(main_window);
 
     /* We register the idle callback with GLUI, *not* with GLUT */
-    //GLUI_Master.set_glutIdleFunc( myGlutIdle );
     GLUI_Master.set_glutIdleFunc( NULL );
 
     glutMainLoop();

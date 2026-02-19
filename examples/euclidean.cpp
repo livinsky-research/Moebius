@@ -87,21 +87,21 @@ void myGlutMotion(int x, int y) {
     for (int i = 0; i < points.size(); ++i) {
         if (pressed[i]) {
             points[i].x += x - mouse.x;
-            points[i].y += y - mouse.y;
+            points[i].y += sy - y - mouse.y;
         }
     }
     
     //std::cout << x << "  " << y << std::endl;
 
     mouse.x = x;
-    mouse.y = y;
+    mouse.y = sy - y;
 
     glutPostRedisplay();
 }
 
 void myGlutPassiveMotion(int x, int y) {
     mouse.x = x;
-    mouse.y = y;
+    mouse.y = sy - y;
     
     for (int i = 0; i < points.size(); ++i) {
         pressed[i] = false;
@@ -152,33 +152,47 @@ void myGlutDisplay() {
     
     r = S / p;
     R = a * b * c / 4 / S; 
-    
+
     sina = a / 2 / R;
     sinb = b / 2 / R;
     sinc = c / 2 / R;
-    
+
     cosa = (b*b + c*c - a*a) / 2 / b / c;    
     cosb = (a*a + c*c - b*b) / 2 / a / c;    
     cosc = (a*a + b*b - c*c) / 2 / a / b;
-    
+
     alpha_ = atan2(sina, cosa);
     beta_ = atan2(sinb, cosb);
     gamma_ = atan2(sinc, cosc);  
-    
+
     ha = 2 * S / a;
     hb = 2 * S / b;
     hc = 2 * S / c;
-    
+
     ra = S / (p - a);
     rb = S / (p - b);
-    rc = S / (p - c);    
+    rc = S / (p - c); 
+
+    // draw body
+    glColor3d(0.7, 0.7, 0.7);
+    glBegin(GL_POLYGON);
+    glVertex3d(A.x, A.y, 0);
+   	glVertex3d(B.x, B.y, 0);
+    glVertex3d(C.x, C.y, 0);
+    glEnd();
     
+    glColor3d(0.3, 0.3, 0.3);
+    line(A, B);  
+    line(B, C);  
+    line(A, C);  
+      
+
     if (euler) {
         glColor3d(0.0, 0.7, 0.0);    
         Point O = Barycentric(A, B, C, a * cosa, b * cosb, c * cosc);
         Point H = Barycentric(A, B, C, (a*a + c*c - b*b) * (a*a + b*b - c*c), (b*b + c*c - a*a) * (a*a + b*b - c*c), (b*b + c*c - a*a) * (a*a + c*c - b*b));
         Point E = O * H;
-        circle(E, R / 2);
+        circle(E, R / 2, 2);
     }
     if (medians) {
         Point M = Barycentric(A, B, C, 1, 1, 1);
@@ -218,7 +232,7 @@ void myGlutDisplay() {
         glColor3d(0.4, 0.0, 0.0);    
         Point I = Barycentric(A, B, C, a, b, c);
         I.draw();
-        circle(I, r);
+        circle(I, r, 2);
     }
     if (excircles) {
         glColor3d(0.2, 0.0, 0.0);    
@@ -228,15 +242,15 @@ void myGlutDisplay() {
         Ia.draw();
         Ib.draw();
         Ic.draw();
-        circle(Ia, ra);
-        circle(Ib, rb);
-        circle(Ic, rc);
+        circle(Ia, ra, 2);
+        circle(Ib, rb, 2);
+        circle(Ic, rc, 2);
     }    
     if (circumcircle) {
         glColor3d(0.0, 0.0, 1.0);
         Point O = Barycentric(A, B, C, a * cosa, b * cosb, c * cosc);
         O.draw();
-        circle(O, R);
+        circle(O, R, 2);
     }
     if (lemoine) {
         glColor3d(0.0, 0.4, 0.4);

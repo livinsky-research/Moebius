@@ -16,7 +16,7 @@ double dist2(const Point& A, const Point& B);
 double area(double a, double b, double c);
 
 void line(const Point& A, const Point& B);
-void circle(const Point& A, double r);
+void circle(const Point& A, double r, int t);
 void arc(const Point& A, const Point& B, double alpha);
 
 // midpoint
@@ -82,10 +82,15 @@ struct Cycle {
     Point inv(const Point& A) const;
     Cycle inv(const Cycle& X) const;
     int side(const Point& A) const;
+    void invert();
     double prod(const Point& P, const Vector& V) const;
     
     void draw() const;
 };
+
+
+// hyperbolic geometry oriented line A --> B
+Cycle hline(const Point& A, const Point& B);
 
 // intersection of cycles. Returns 0, 1, or 2 points
 std::vector<Point> operator^(const Cycle& X, const Cycle& Y);
@@ -102,6 +107,8 @@ Cycle Orthogonal(const Cycle& X, const Point& A, const Point& B);
 //Cycle operator *(const Cycle& P, const Cycle& Q);
 double sin(const Cycle& X, const Cycle& Y);
 double cos(const Cycle& X, const Cycle& Y);
+
+double operator*(const Cycle& X, const Cycle& Y);
 
 Cycle Split(const Cycle& X, const Cycle& Y, double lambda); 
 
@@ -120,6 +127,10 @@ public:
     void draw() const;
 };
 
+enum Orientation {ABC = 1, ACB = -1};
+
+Orientation operator!(const Orientation& orient);
+
 class Triangle {
 public:
     Triangle(const Point& A, const Point& B, const Point& C, double alpha, double beta, double gamma) : A(A), B(B), C(C), alpha(alpha), beta(beta), gamma(gamma) {
@@ -132,7 +143,9 @@ public:
     double alpha;
     double beta;
     double gamma;
-    
+
+    Orientation orientation = ABC;
+
     bool euler = false;
     bool circumcircle = false;
     bool incircle = false;
@@ -142,41 +155,42 @@ public:
     bool pseudoaltitudes = false;
     bool omega = false;
     bool brocard = false;
-    
+
     void recompute();
+    void hyperbolic();
     double area() const;
     void draw() const;
     void draw_body() const;
-    
+
+    Orientation get_euclidean_orientation() const;
+
     std::vector<Cycle> get_sides() const;
     std::vector<Cycle> get_bisectors() const;
     std::vector<Cycle> get_cevians(const Point& X, const Point& Y, const Point& Z) const;
     std::vector<Cycle> get_cevians(const Point& P) const;
     std::vector<Cycle> get_altitudes() const;
-    
+
     Cycle aa;
     Cycle bb;
     Cycle cc;
-    
+
     Point Ha;
     Point Hb;
     Point Hc;
-    
+
     Cycle omega_a;
     Cycle omega_b;
     Cycle omega_c;
-    
+
     Cycle inc;
-    
-    int orient;
-    
+
     double a0;
     double b0;
     double c0;
-    
+
     double alpha0;
     double beta0;
     double gamma0;
-    
+
 };
 

@@ -31,10 +31,6 @@ int main_window;
 
 extern int angle_step;
 
-void alpha_trans(int x);
-void beta_trans(int x);
-void gamma_trans(int x);
-
 /**************************************** myGlutKeyboard() **********/
 void myGlutKeyboard(unsigned char Key, int x, int y) {
     switch(Key) {
@@ -60,29 +56,7 @@ void myGlutMouse(int button, int button_state, int x, int y) {
                 pressed[i] = true;
             }       
         }
-    }
-    if (button == 3 && button_state == GLUT_DOWN) {
-        if (dist(mouse, A) <= point_rad) {
-            alpha_trans(angle_step);
-        }
-        if (dist(mouse, B) <= point_rad) {
-            beta_trans(angle_step);
-        }        
-        if (dist(mouse, C) <= point_rad) {
-            gamma_trans(angle_step);
-        }
-    }
-    if (button == 4 && button_state == GLUT_DOWN) {
-        if (dist(mouse, A) <= point_rad) {
-            alpha_trans(-angle_step);
-        }
-        if (dist(mouse, B) <= point_rad) {
-            beta_trans(-angle_step);
-        }        
-        if (dist(mouse, C) <= point_rad) {
-            gamma_trans(-angle_step);
-        }
-    }    
+    }  
 }
 
 
@@ -92,6 +66,7 @@ void myGlutMotion(int x, int y) {
         if (pressed[i]) {
             points[i].x += x - mouse.x;
             points[i].y += sy - y - mouse.y;
+            points[i].y = std::fmax(0, points[i].y);
         }
     }
     
@@ -134,11 +109,15 @@ void myGlutDisplay() {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
  
-    gluOrtho2D(0, sx, 0, sy);    
+    gluOrtho2D(0, sx, 0, sy);
     glViewport(0, 0, sx, sy);
 
-    T.recompute();
+    T.hyperbolic();
     T.draw();
+    //Cycle aa = hline(T.A, T.B);
+    
+    //aa.draw();
+    
     for (const Point& P : points) {
         //Point Q = {mouse.x, sy - mouse.y};    
 		if (dist(P, mouse) <= point_rad) {    
@@ -200,52 +179,6 @@ void brocard_cb(int control) {
     glutPostRedisplay();
 }
 
-void alpha_trans(int x) {
-    alpha_ += x;
-    
-    int minn = std::max(std::max(0, beta_ + gamma_ - 540), std::abs(beta_ - gamma_) - 180);
-    int maxx = std::min(std::min(360, beta_ + gamma_ + 180), -std::abs(beta_ - gamma_) + 540);
-    if (alpha_ < minn) {
-        alpha_ = minn;
-    }    
-    if (alpha_ > maxx) {
-        alpha_ = maxx;
-    }
-    T.alpha = M_PI / 180 * alpha_;    
-    glutPostRedisplay();
-}
-
-void beta_trans(int x) {
-    beta_ += x;
-    
-    int minn = std::max(std::max(0, alpha_ + gamma_ - 540), std::abs(alpha_ - gamma_) - 180);
-    int maxx = std::min(std::min(360, alpha_ + gamma_ + 180), -std::abs(alpha_ - gamma_) + 540);    
-    if (beta_ < minn) {
-        beta_ = minn;
-    }    
-    if (beta_ > maxx) {
-        beta_ = maxx;
-    } 
-    
-    T.beta = M_PI / 180 * beta_;    
-    glutPostRedisplay();
-}
-
-void gamma_trans(int x) {
-    gamma_ += x;
-    
-    int minn = std::max(std::max(0, alpha_ + beta_ - 540), std::abs(alpha_ - beta_) - 180);
-    int maxx = std::min(std::min(360, alpha_ + beta_ + 180), -std::abs(alpha_ - beta_) + 540);
-    if (gamma_ < minn) {
-        gamma_ = minn;
-    }    
-    if (gamma_ > maxx) {
-        gamma_ = maxx;
-    }
-    T.gamma = M_PI / 180 * gamma_;    
-    glutPostRedisplay();
-}
-
 
 /**************************************** main() ********************/
 
@@ -259,7 +192,7 @@ int main(int argc, char* argv[]) {
     glutInitWindowPosition(50, 50);
     glutInitWindowSize(sx, sy);
 
-    main_window = glutCreateWindow("Moebius Triangle");
+    main_window = glutCreateWindow("Hyperbolic Triangle");
     glutDisplayFunc( myGlutDisplay );
     glutReshapeFunc( myGlutReshape );
     glutKeyboardFunc( myGlutKeyboard );

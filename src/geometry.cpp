@@ -2,6 +2,8 @@
 
 #include <random>
 #include <iostream>
+#include <algorithm>
+#include <cmath>
 
 std::ostream& operator << (std::ostream& s, const Point& P) {
     return s << "(" << P.x << ", " << P.y << ")";
@@ -156,7 +158,7 @@ Vector solve(const Vector& a1, const Vector& a2, const Vector& b) {
     return res / det;
 }
 
-Cycle::Cycle(const Point& A, double b, double c) : a(0), b(b), c(c), R(-1) {
+Cycle::Cycle(const Point& A, double b, double c) : a(0), b(b), c(c), R(INFINITY) {
     d = -b * A.x - c * A.y;
 }
 
@@ -167,12 +169,18 @@ Cycle::Cycle(const Point& O, double R) : a(1), R(R), O(O) {
     b = - 2 * O.x;
     c = - 2 * O.y;
     d = -R * R + O.x * O.x + O.y * O.y;
+    if (R < 0) {
+        a = -a;
+        b = -b;
+        c = -c;
+        d = -d;
+    }
 }
 
 Cycle::Cycle(double a, double b, double c, double d, double R) : a(a), b(b), c(c), d(d), R(R) {
-    if (a == 1) {
-        O.x = - b / 2;
-        O.y = - c / 2;
+    if (a != 0) {
+        O.x = - b / 2 / a;
+        O.y = - c / 2 / a;
     }
 }
 
@@ -183,7 +191,7 @@ Cycle::Cycle(const Point& A, const Point& B, double alpha) {
         b = A.y - B.y;
         c = B.x - A.x;
         d = A.x * B.y - B.x * A.y;
-        R = -1;
+        R = INFINITY;
         return;
     }
     
@@ -198,6 +206,12 @@ Cycle::Cycle(const Point& A, const Point& B, double alpha) {
     b = -2 * O.x;
     c = -2 * O.y;
     d = -R * R + O.x * O.x + O.y * O.y;
+    if (R < 0) {
+        a = -a;
+        b = -b;
+        c = -c;
+        d = -d;
+    }
 }
 
 Cycle::Cycle(const Point& A, const Point& B, const Point& C) {
@@ -212,7 +226,7 @@ Cycle::Cycle(const Point& A, const Point& B, const Point& C) {
         b = A.y - B.y;
         c = B.x - A.x;
         d = A.x * B.y - B.x * A.y;
-        R = -1;
+        R = INFINITY;
     }
     // this is circumcircle
     double a2 = dist2(B, C);
@@ -296,6 +310,16 @@ int Cycle::side(const Point& A) const {
     }
 }
 
+void Cycle::invert() {
+    if (a != 0) {
+        R = -R;
+    }
+    a = -a;
+    b = -b;
+    c = -c;
+    d = -d;
+}
+
 double Cycle::prod(const Point& A, const Vector& V) const {
     if (a == 0) {
         Vector U{b, c};
@@ -305,6 +329,25 @@ double Cycle::prod(const Point& A, const Vector& V) const {
 
     Vector U = (A - O).normalize().rot();
     return V * U;
+}
+
+Cycle hline(const Point& A, const Point& B) {
+    if (A.x == B.x) {
+        return Cycle(A, B);    
+    }
+
+    Point M = A * B;
+    Vector v = (B - A).rot();
+    
+    double t = M.y / v.y;
+    
+    Point O = M - t * v;
+    double R = dist(A, O);
+    
+    if (A.x > B.x) {
+        R = -R;
+    }
+    return Cycle(O, R);
 }
 
 std::vector<Point> operator^(const Cycle& X, const Cycle& Y) {
@@ -618,16 +661,19 @@ double cos(const Cycle& X, const Cycle& Y) {
        
        return u * v;
    }
-   if (X.a == 1 && Y.a == 0) {
+   if (X.a != 0 && Y.a == 0) {
        Vector v{Y.b, Y.c};
        return (Y.b * X.O.x + Y.c * X.O.y + Y.d) / v.norm() / X.R;
    }
-   if (X.a == 0 && Y.a == 1) {
+   if (X.a == 0 && Y.a != 0) {
        return cos(Y, X);
    }
-
    double d2 = dist2(X.O, Y.O);
    return (d2 - X.R * X.R - Y.R * Y.R) / 2 / X.R / Y.R;
+}
+
+double operator*(const Cycle& X, const Cycle& Y) {
+    return cos(X, Y);
 }
 
 inline double sqr(double x) {
@@ -662,15 +708,100 @@ Cycle Split(const Cycle& X, const Cycle& Y, double lambda) {
     return Cycle(O, R);
 }
 
+Orientation operator!(const Orientation& orient) {
+    return orient == ABC? ACB : ABC;
+} 
+
+Orientation Triangle::get_euclidean_orientation() const {
+    if ((B.x - A.x) * (C.y - A.y) > (B.y - A.y) * (C.x - A.x)) {
+        return ACB;
+    }
+    return ABC;
+}
+
+void Triangle::hyperbolic() {
+    double a = dist(B, C);
+    double b = dist(A, C);
+    double c = dist(A, B);
+    
+    auto orient = get_euclidean_orientation();
+    
+    alpha0 = acos((b * b + c * c - a * a) / (2 * b * c));
+    beta0 = acos((a * a + c * c - b * b) / (2 * a * c));
+    gamma0 = acos((a * a + b * b - c * c) / (2 * a * b));
+    
+    aa = hline(B, C);
+    bb = hline(C, A);
+    cc = hline(A, B);
+    
+    //aa.draw();
+   // bb.draw();
+    //cc.draw();
+    
+    orientation = aa.side(A) == -1? ABC : ACB;  
+    
+    //std::cout << orientation << std::endl;
+
+
+   /* if (aa.side(A) == -1) {
+        aa.R = -aa.R;
+    }
+    if (bb.side(B) == -1) {
+        bb.R = -bb.R;
+    }
+    if (cc.side(C) == -1) {
+        cc.R = -cc.R;
+    }*/
+    
+    alpha = acos(std::clamp(bb * cc, -1.0, 1.0));
+    beta = acos(std::clamp(aa * cc, -1.0, 1.0));
+    gamma = acos(std::clamp(aa * bb, -1.0, 1.0));
+    
+    if (orientation == ABC) {
+		if (orient == ABC) {
+			a0 = (beta - beta0 + gamma - gamma0 - alpha + alpha0) / 2;
+			b0 = (alpha - alpha0 + gamma - gamma0 - beta + beta0) / 2;
+			c0 = (alpha - alpha0 + beta - beta0 - gamma + gamma0) / 2;
+		} else {
+		    a0 = -M_PI + (4 * M_PI - beta - beta0 - gamma - gamma0 + alpha + alpha0) / 2;
+		    b0 = -M_PI + (4 * M_PI - alpha - alpha0 - gamma - gamma0 + beta + beta0) / 2;
+		    c0 = -M_PI + (4 * M_PI - alpha - alpha0 - beta - beta0 + gamma + gamma0) / 2;
+		}    
+    } else {
+		if (orient == ACB) {
+			a0 = (beta - beta0 + gamma - gamma0 - alpha + alpha0) / 2;
+			b0 = (alpha - alpha0 + gamma - gamma0 - beta + beta0) / 2;
+			c0 = (alpha - alpha0 + beta - beta0 - gamma + gamma0) / 2;
+		} else {
+		    a0 = -M_PI + (4 * M_PI - beta - beta0 - gamma - gamma0 + alpha + alpha0) / 2;
+		    b0 = -M_PI + (4 * M_PI - alpha - alpha0 - gamma - gamma0 + beta + beta0) / 2;
+		    c0 = -M_PI + (4 * M_PI - alpha - alpha0 - beta - beta0 + gamma + gamma0) / 2;
+		}    
+    }
+
+    //std::cout << a0 << "  " << b0 << "  " << c0 << std::endl;
+   // std::cout << alpha << "  " << beta << "  " << gamma << std::endl;
+    //std::cout << alpha0 << "  " << beta0 << "  " << gamma0 << std::endl;
+    
+    //if (orientation == ACB) {
+    //    a0 = 2 * M_PI - a0;
+    //    b0 = 2 * M_PI - b0;
+    //    c0 = 2 * M_PI - c0;
+    //}
+
+   // aa = orient > 0? Cycle(B, C, a0) : Cycle(C, B, a0);
+  //  bb = orient > 0? Cycle(C, A, b0) : Cycle(A, C, b0);
+   // cc = orient > 0? Cycle(A, B, c0) : Cycle(B, A, c0);
+
+
+}
+
 void Triangle::recompute() {
     double a = dist(B, C);
     double b = dist(A, C);
     double c = dist(A, B);
     
-    orient = 1;    
-    if ((B.x - A.x) * (C.y - A.y) > (B.y - A.y) * (C.x - A.x)) {
-        orient = -1;
-    }
+    auto orient = get_euclidean_orientation();    
 
     alpha0 = acos((b * b + c * c - a * a) / (2 * b * c));
     beta0 = acos((a * a + c * c - b * b) / (2 * a * c));
@@ -746,12 +877,14 @@ std::vector<Cycle> Triangle::get_sides() const {
 std::vector<Cycle> Triangle::get_bisectors() const {
     std::vector<Cycle> bs;
     
-    Vector ab = orient > 0 ? (B - A).rot(-c0).normalize() : (B - A).rot(c0).normalize();
-    Vector ba = orient > 0 ? (A - B).rot(c0).normalize() : (A - B).rot(-c0).normalize();
-    Vector ac = orient > 0 ? (C - A).rot(b0).normalize() : (C - A).rot(-b0).normalize();
-    Vector ca = orient > 0 ? (A - C).rot(-b0).normalize() : (A - C).rot(b0).normalize();       
-    Vector bc = orient > 0 ? (C - B).rot(-a0).normalize() : (C - B).rot(a0).normalize();
-    Vector cb = orient > 0 ? (B - C).rot(a0).normalize() : (B - C).rot(-a0).normalize();
+    auto orient = get_euclidean_orientation();
+    
+    Vector ab = orient == ABC ? (B - A).rot(-c0).normalize() : (B - A).rot(c0).normalize();
+    Vector ba = orient == ABC ? (A - B).rot(c0).normalize() : (A - B).rot(-c0).normalize();
+    Vector ac = orient == ABC ? (C - A).rot(b0).normalize() : (C - A).rot(-b0).normalize();
+    Vector ca = orient == ABC ? (A - C).rot(-b0).normalize() : (A - C).rot(b0).normalize();       
+    Vector bc = orient == ABC ? (C - B).rot(-a0).normalize() : (C - B).rot(a0).normalize();
+    Vector cb = orient == ABC ? (B - C).rot(a0).normalize() : (B - C).rot(-a0).normalize();
     
     std::vector<Cycle> a_bisectors = Bisectors(bb, cc);
     std::vector<Cycle> b_bisectors = Bisectors(aa, cc);
@@ -814,9 +947,3 @@ std::vector<Cycle> Triangle::get_altitudes() const {
     std::vector<Point> CC = aa ^ bb;
     return {Orthogonal(aa, AA[0], AA[1]), Orthogonal(bb, BB[0], BB[1]), Orthogonal(cc, CC[0], CC[1])};
 }
-
-
-
-
-
-
