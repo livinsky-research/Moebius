@@ -297,6 +297,7 @@ int main(int argc, char* argv[]) {
     //GLUI_Master.set_glutIdleFunc( myGlutIdle );
     GLUI_Master.set_glutIdleFunc( NULL );
 
+    glLineWidth(3);
     glutMainLoop();
 
     return EXIT_SUCCESS;

@@ -162,7 +162,7 @@ Cycle::Cycle(const Point& A, double b, double c) : a(0), b(b), c(c), R(INFINITY)
     d = -b * A.x - c * A.y;
 }
 
-Cycle::Cycle(const Point& A, const Vector& V) : Cycle(A, V.y, -V.x) {
+Cycle::Cycle(const Point& A, const Vector& V) : Cycle(A, A + V) {
 }
 
 Cycle::Cycle(const Point& O, double R) : a(1), R(R), O(O) {
@@ -177,10 +177,16 @@ Cycle::Cycle(const Point& O, double R) : a(1), R(R), O(O) {
     }
 }
 
-Cycle::Cycle(double a, double b, double c, double d, double R) : a(a), b(b), c(c), d(d), R(R) {
-    if (a != 0) {
+Cycle::Cycle(double a, double b, double c, double d) : a(a), b(b), c(c), d(d) {
+    if (a) {
         O.x = - b / 2 / a;
         O.y = - c / 2 / a;
+        R = sqrt(fabs(b*b + c*c - 4*a*d)) / 2 / a;
+        if (b*b + c*c - 4*a*d < 0) {
+            virt = true;
+        }
+    } else {
+        R = INFINITY;
     }
 }
 
@@ -272,7 +278,7 @@ Point Cycle::sample() const {
 }
 
 Point Cycle::inv(const Point& A) const {
-    if (a == 1) {
+    if (a) {
         double d = dist(A, O);
         return O + ((R * R)/ (d * d)) * (A - O);
     }
@@ -333,7 +339,7 @@ double Cycle::prod(const Point& A, const Vector& V) const {
 
 Cycle hline(const Point& A, const Point& B) {
     if (A.x == B.x) {
-        return Cycle(A, B);    
+        return Cycle(A, B);
     }
 
     Point M = A * B;
@@ -368,9 +374,9 @@ std::vector<Point> operator^(const Cycle& X, const Cycle& Y) {
         double delta = X.b * Y.c - X.c * Y.b;        
         return {{ (-X.d * Y.c + X.c * Y.d) / delta, (-X.b * Y.d + X.d * Y.b) / delta}};  
     }
-    if (X.a == 1 && Y.a == 0) {
+    if (X.a != 0 && Y.a == 0) {
         double d = fabs(Y.b * X.O.x + Y.c * X.O.y + Y.d) / sqrt(Y.b * Y.b + Y.c * Y.c);
-        if (d > X.R + eps) {
+        if (d > fabs(X.R) + eps) {
             return {};
         }
        
@@ -378,15 +384,15 @@ std::vector<Point> operator^(const Cycle& X, const Cycle& Y) {
         V.normalize();
         V *= -Y.side(X.O);
         
-        if (fabs(X.R - d) <= eps) {
-            return {X.O + X.R * V};
+        if (fabs(fabs(X.R) - d) <= eps) {
+            return {X.O + fabs(X.R) * V};
         }
         
         double t = sqrt(X.R * X.R - d * d);        
         Vector W = V.rot();
         return {X.O + d * V + t * W, X.O + d * V - t * W};
     }
-    if (X.a == 0 && Y.a == 1) {
+    if (X.a == 0 && Y.a != 0) {
         return Y ^ X;
     }
     // intersection of two circles
@@ -418,7 +424,7 @@ std::vector<Cycle> Apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z) {
         // three lines. Return two to four circles
         return {};
     }
-    if (X.a == 1 && Y.a == 0 && Z.a == 0) {
+    if (X.a && Y.a == 0 && Z.a == 0) {
         // two lines and a circle
         // a line and two circles
         // solve the system of equations
@@ -473,22 +479,22 @@ std::vector<Cycle> Apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z) {
         }
         return res;
     }
-    if (X.a == 0 && Y.a == 1 && Z.a == 0) {
+    if (X.a == 0 && Y.a && Z.a == 0) {
         return Apollonius(Y, Z, X);
     }
-    if (X.a == 0 && Y.a == 0 && Z.a == 1) {
+    if (X.a == 0 && Y.a == 0 && Z.a) {
         return Apollonius(Z, X, Y);
     }
 
 
-    if (X.a == 1 && Y.a == 1 && Z.a == 0) {
+    if (X.a && Y.a && Z.a == 0) {
         // a line and two circles
         return {};   
     }
-    if (X.a == 1 && Y.a == 0 && Z.a == 1) {
+    if (X.a && Y.a == 0 && Z.a) {
         return Apollonius(Z, X, Y);
     }
-    if (X.a == 0 && Y.a == 1 && Z.a == 1) {
+    if (X.a == 0 && Y.a && Z.a) {
         return Apollonius(Y, Z, X);
     }
     // three circles case
@@ -526,7 +532,7 @@ std::vector<Cycle> Apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z) {
         if (disc >= -eps) {
             double R = (-qb + sqrt(fmax(disc, 0))) / 2 / qa;
             Point E = Ia + m + R * n;
-            res.emplace_back(E, fabs(R));
+            res.emplace_back(E, R);
         }
     }
     return res;
@@ -539,13 +545,13 @@ std::vector<Cycle> Bisectors(const Cycle& X, const Cycle& Y) {
         Vector W = {Y.b, Y.c};
 
         if (fabs(V * W) < eps) {
-            return {Cycle(0, (X.b + Y.b) / 2, (X.c + Y.c) / 2, (X.d + Y.d) / 2, -1)};
+            return {Cycle(0, (X.b + Y.b) / 2, (X.c + Y.c) / 2, (X.d + Y.d) / 2)};
         }
 
         Point A = (X ^ Y)[0];
         return {Cycle(A, V + W), Cycle(A, V - W)};
     }
-    if (X.a == 1 && Y.a == 0) {
+    if (X.a && Y.a == 0) {
         // two cases 
         std::vector<Point> xy = X ^ Y;
 
@@ -564,7 +570,7 @@ std::vector<Cycle> Bisectors(const Cycle& X, const Cycle& Y) {
 
         return {Cycle(X.O - X.R * V, dist(X.O - X.R * V, A)), Cycle(X.O + X.R * V, dist(X.O + X.R * V, A))};
     }
-    if (X.a == 0 && Y.a == 1) {
+    if (X.a == 0 && Y.a) {
         return Bisectors(Y, X);
     }
     // two circles
@@ -624,6 +630,7 @@ std::vector<Cycle> Bisectors(const Cycle& X, const Cycle& Y) {
 }
 
 Cycle Orthogonal(const Cycle& X, const Point& A, const Point& B) {
+    // a cycle passing through A and B and orthogonal to X
     Point C = X.inv(A);
     Point D = X.inv(B);
     
@@ -661,11 +668,11 @@ double cos(const Cycle& X, const Cycle& Y) {
        
        return u * v;
    }
-   if (X.a != 0 && Y.a == 0) {
+   if (X.a && Y.a == 0) {
        Vector v{Y.b, Y.c};
        return (Y.b * X.O.x + Y.c * X.O.y + Y.d) / v.norm() / X.R;
    }
-   if (X.a == 0 && Y.a != 0) {
+   if (X.a == 0 && Y.a) {
        return cos(Y, X);
    }
    double d2 = dist2(X.O, Y.O);
@@ -681,6 +688,16 @@ inline double sqr(double x) {
 }
 
 Cycle Split(const Cycle& X, const Cycle& Y, double lambda) {
+    double norm_x = sqrt(-4 * X.a * X.d + X.b * X.b + X.c * X.c);
+    double norm_y = sqrt(-4 * Y.a * Y.d + Y.b * Y.b + Y.c * Y.c);
+    double a = X.a / norm_x - lambda * Y.a / norm_y;
+    double b = X.b / norm_x - lambda * Y.b / norm_y;
+    double c = X.c / norm_x - lambda * Y.c / norm_y;
+    double d = X.d / norm_x - lambda * Y.d / norm_y;
+    
+    return {a, b, c, d};
+
+/*
     double rx = X.R;
     double ry = Y.R;
 
@@ -705,8 +722,20 @@ Cycle Split(const Cycle& X, const Cycle& Y, double lambda) {
     //double R = sqrt(sqr(u * rx) + sqr(v * ry) + u * v * (sqr(rx) + sqr(ry) - sqr(d)));
     double R = sqrt(sqr(rx) * sqr(ry) * (1 + sqr(lambda))  - lambda * rx * ry * (sqr(rx) + sqr(ry) - d))/fabs(lambda * rx - ry);
     
-    return Cycle(O, R);
+    return Cycle(O, R);*/
 }
+
+Cycle Split(const Cycle& X, const Cycle& Y, double x, double y) {
+    double norm_x = sqrt(-4 * X.a * X.d + X.b * X.b + X.c * X.c);
+    double norm_y = sqrt(-4 * Y.a * Y.d + Y.b * Y.b + Y.c * Y.c);
+    double a = x * X.a / norm_x + y * Y.a / norm_y;
+    double b = x * X.b / norm_x + y * Y.b / norm_y;
+    double c = x * X.c / norm_x + y * Y.c / norm_y;
+    double d = x * X.d / norm_x + y * Y.d / norm_y;
+    
+    return {a, b, c, d};
+}
+
 
 Orientation operator!(const Orientation& orient) {
     return orient == ABC? ACB : ABC;
@@ -721,38 +750,21 @@ Orientation Triangle::get_euclidean_orientation() const {
 
 void Triangle::hyperbolic() {
     double a = dist(B, C);
-    double b = dist(A, C);
+    double b = dist(C, A);
     double c = dist(A, B);
-    
+
     auto orient = get_euclidean_orientation();
-    
+
     alpha0 = acos((b * b + c * c - a * a) / (2 * b * c));
     beta0 = acos((a * a + c * c - b * b) / (2 * a * c));
     gamma0 = acos((a * a + b * b - c * c) / (2 * a * b));
-    
+
     aa = hline(B, C);
     bb = hline(C, A);
     cc = hline(A, B);
-    
-    //aa.draw();
-   // bb.draw();
-    //cc.draw();
-    
+
     orientation = aa.side(A) == -1? ABC : ACB;  
-    
-    //std::cout << orientation << std::endl;
-
-
-   /* if (aa.side(A) == -1) {
-        aa.R = -aa.R;
-    }
-    if (bb.side(B) == -1) {
-        bb.R = -bb.R;
-    }
-    if (cc.side(C) == -1) {
-        cc.R = -cc.R;
-    }*/
-    
+  
     alpha = acos(std::clamp(bb * cc, -1.0, 1.0));
     beta = acos(std::clamp(aa * cc, -1.0, 1.0));
     gamma = acos(std::clamp(aa * bb, -1.0, 1.0));
@@ -779,20 +791,42 @@ void Triangle::hyperbolic() {
 		}    
     }
 
-    //std::cout << a0 << "  " << b0 << "  " << c0 << std::endl;
-   // std::cout << alpha << "  " << beta << "  " << gamma << std::endl;
-    //std::cout << alpha0 << "  " << beta0 << "  " << gamma0 << std::endl;
+    double delta = (M_PI + alpha + beta + gamma) / 4;
+
+    omega_a = orient > 0? Cycle(B, C, -delta + a0) : Cycle(C, B, delta + a0);
+    omega_b = orient > 0? Cycle(C, A, -delta + b0) : Cycle(A, C, delta + b0);
+    omega_c = orient > 0? Cycle(A, B, -delta + c0) : Cycle(B, A, delta + c0);
+
+    std::vector<Point> ha = omega_b ^ aa;
+    std::vector<Point> hb = omega_c ^ bb;
+    std::vector<Point> hc = omega_a ^ cc;
+
+    if (ha.size() == 1) {
+        ha.push_back(ha.back());
+    }
+    if (hb.size() == 1) {
+        hb.push_back(hb.back());
+    }
+    if (hc.size() == 1) {
+        hc.push_back(hc.back());
+    }
+
+    Ha = dist(C, ha[0]) > dist(C, ha[1])? ha[0] : ha[1];
+    Hb = dist(A, hb[0]) > dist(A, hb[1])? hb[0] : hb[1];
+    Hc = dist(B, hc[0]) > dist(B, hc[1])? hc[0] : hc[1];
     
-    //if (orientation == ACB) {
-    //    a0 = 2 * M_PI - a0;
-    //    b0 = 2 * M_PI - b0;
-    //    c0 = 2 * M_PI - c0;
-    //}
+    std::vector<Cycle> inexcircles = Apollonius(aa, bb, cc);
+    
+    int aa_side = aa.side(A);
+    int bb_side = bb.side(B);
+    int cc_side = cc.side(C);
 
-   // aa = orient > 0? Cycle(B, C, a0) : Cycle(C, B, a0);
-  //  bb = orient > 0? Cycle(C, A, b0) : Cycle(A, C, b0);
-   // cc = orient > 0? Cycle(A, B, c0) : Cycle(B, A, c0);
-
+    for (const Cycle& circle : inexcircles) {
+        if (aa.side(circle.sample()) == aa_side && bb.side(circle.sample()) == bb_side && cc.side(circle.sample()) == cc_side) {
+            inc = circle;
+            break;
+        }
+    }
 
 }
 
@@ -829,8 +863,6 @@ void Triangle::recompute() {
     aa = orient > 0? Cycle(B, C, a0) : Cycle(C, B, a0);
     bb = orient > 0? Cycle(C, A, b0) : Cycle(A, C, b0);
     cc = orient > 0? Cycle(A, B, c0) : Cycle(B, A, c0);
-    
-    return;
 
     double delta = (M_PI + alpha + beta + gamma) / 4;
 
@@ -870,6 +902,19 @@ void Triangle::recompute() {
     }
 }
 
+Cycle Triangle::cycle(double x, double y, double z) const {
+    double norm_a = sqrt(-4 * aa.a * aa.d + aa.b * aa.b + aa.c * aa.c);
+    double norm_b = sqrt(-4 * bb.a * bb.d + bb.b * bb.b + bb.c * bb.c);
+    double norm_c = sqrt(-4 * cc.a * cc.d + cc.b * cc.b + cc.c * cc.c);
+    
+    double a = x * aa.a / norm_a + y * bb.a / norm_b + z * cc.a / norm_c;
+    double b = x * aa.b / norm_a + y * bb.b / norm_b + z * cc.b / norm_c;
+    double c = x * aa.c / norm_a + y * bb.c / norm_b + z * cc.c / norm_c;
+    double d = x * aa.d / norm_a + y * bb.d / norm_b + z * cc.d / norm_c;
+    
+    return {a, b, c, d};
+}
+
 std::vector<Cycle> Triangle::get_sides() const {
     return {aa, bb, cc};
 }
@@ -877,8 +922,10 @@ std::vector<Cycle> Triangle::get_sides() const {
 std::vector<Cycle> Triangle::get_bisectors() const {
     std::vector<Cycle> bs;
     
+    return {Split(bb, cc, 1), Split(cc, aa, 1), Split(aa, bb, 1)};
+
     auto orient = get_euclidean_orientation();
-    
+
     Vector ab = orient == ABC ? (B - A).rot(-c0).normalize() : (B - A).rot(c0).normalize();
     Vector ba = orient == ABC ? (A - B).rot(c0).normalize() : (A - B).rot(-c0).normalize();
     Vector ac = orient == ABC ? (C - A).rot(b0).normalize() : (C - A).rot(-b0).normalize();
@@ -892,7 +939,7 @@ std::vector<Cycle> Triangle::get_bisectors() const {
     
     if (fabs(alpha - M_PI) > eps) {
         if (a_bisectors.size() == 1) {
-            a_bisectors[0].draw();
+            bs.push_back(a_bisectors[0]);
         } else {  // size() == 2
             Vector V = (ab + ac).normalize();
             if (fabs(a_bisectors[0].prod(A, V)) > fabs(a_bisectors[1].prod(A, V))) {
@@ -904,7 +951,7 @@ std::vector<Cycle> Triangle::get_bisectors() const {
     }
     if (fabs(beta - M_PI) > eps) {        
         if (b_bisectors.size() == 1) {
-            b_bisectors[0].draw();
+            bs.push_back(b_bisectors[0]);
         } else { // size() == 2
             Vector V = (ba + bc).normalize();
             if (fabs(b_bisectors[0].prod(B, V)) > fabs(b_bisectors[1].prod(B, V))) {
@@ -916,7 +963,7 @@ std::vector<Cycle> Triangle::get_bisectors() const {
     }
     if (fabs(gamma - M_PI) > eps) {            
         if (c_bisectors.size() == 1) {
-            c_bisectors[0].draw();
+            bs.push_back(c_bisectors[0]);
         } else { // size() == 2
             Vector V = (ca + cb).normalize();
             if (fabs(c_bisectors[0].prod(C, V)) > fabs(c_bisectors[1].prod(C, V))) {
@@ -942,6 +989,10 @@ std::vector<Cycle> Triangle::get_cevians(const Point& P) const {
 }
 
 std::vector<Cycle> Triangle::get_altitudes() const {
+    
+    return {Split(bb, cc, cos(beta), -cos(gamma)), Split(cc, aa, cos(gamma), -cos(alpha)), Split(aa, bb, cos(alpha), -cos(beta))};
+
+
     std::vector<Point> AA = bb ^ cc;
     std::vector<Point> BB = aa ^ cc;
     std::vector<Point> CC = aa ^ bb;

@@ -20,26 +20,24 @@ void line(const Point& A, const Point& B) {
 	glEnd();
 }
 
-void circle(const Point& A, double r, int t = 1) {
+void circle(const Point& A, double r) {
 	static float angle_theta;
     glBegin(GL_LINE_LOOP);
-    for (int x = r + 1 - t; x <= r - 1 + t; ++x) {
-		for (int i = 0; i < 2 * n_segments; i++) {
-			angle_theta = i * M_PI / n_segments;
-			glVertex3d(A.x + x * cos(angle_theta), A.y + x * sin(angle_theta), 0);
-		}
+	for (int i = 0; i < 2 * n_segments; i++) {
+		angle_theta = i * M_PI / n_segments;
+		glVertex3d(A.x + r * cos(angle_theta), A.y + r * sin(angle_theta), 0);
 	}
 	glEnd();
 }
 
+void Vector::draw(const Point& X) const {
+    glColor3d(0.5, 0.0, 0.0);
+    line(X, X + 50 * *this);
+}
+
 void Cycle::draw() const {
-    if (a == 1) {
+    if (a) {
         circle(O, R);
-        if (R > 0) {            
-            circle(O, R - 1);
-        } else {
-            circle(O, R + 1);
-        }
     } else {    
         glBegin(GL_LINE_STRIP);
         const double l = 5000;
@@ -197,7 +195,6 @@ void Triangle::draw_body() const {
 	if (euclid == ABC) {
 	    glClearColor(inner_grey, inner_grey, inner_grey, 0.0);
 	    glClear(GL_COLOR_BUFFER_BIT);
-	    //std::cout << a0 << " - " << b0 << " - " << c0 << std::endl;
 	    if (a0 >= M_PI) {
 	        glClearColor(outer_grey, outer_grey, outer_grey, 0.0);
 	        glClear(GL_COLOR_BUFFER_BIT);
@@ -261,10 +258,8 @@ void Triangle::draw_body() const {
 	        glEnd();
 	    }                  
 	} else {
-	    //std::cout << a0 << " - " << b0 << " - " << c0 << std::endl;
 	    glClearColor(outer_grey, outer_grey, outer_grey, 0.0);
-	    glClear(GL_COLOR_BUFFER_BIT);        
-	    
+	    glClear(GL_COLOR_BUFFER_BIT);	    
 	    if (a0 >= M_PI) {
 	        glClearColor(inner_grey, inner_grey, inner_grey, 0.0);
 	        glClear(GL_COLOR_BUFFER_BIT);
@@ -368,7 +363,7 @@ void Triangle::draw() const {
     
     if (bisectors) {
         const auto bs = get_bisectors();
-        for (const auto b: bs) {
+        for (const auto& b: bs) {
             b.draw();
         }
     }
@@ -378,7 +373,7 @@ void Triangle::draw() const {
         glColor3d(0.0, 0.0, 1.0);
         circum_circle.draw();
     }
-    
+       
     Cycle euler_circle(Ha, Hb, Hc);
     
     if (pseudoaltitudes) {

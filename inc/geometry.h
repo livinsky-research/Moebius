@@ -37,6 +37,8 @@ struct Vector {
     Vector& operator/=(double k);    
     Vector rot() const;
     Vector rot(double alpha) const;
+    
+    void draw(const Point& A) const;
 };
 
 std::ostream& operator << (std::ostream& s, const Point& P);
@@ -64,17 +66,19 @@ Vector solve(const Vector& a1, const Vector& a2, const Vector& b);
 struct Cycle {
     // line and circle in the form
     // a(x^2 + y^2) + bx + cy + d = 0
-    // a = 0 or a = 1 always
+    // a = 0 iff we have a line
+    // R is computed from R^2 = b^2/4a^a + c^2/4a^2 - d/a
+    // sign R must be the equal to sign a
     double a, b, c, d;
-    // R =-1 for a line
     double R;
+    bool virt = false;
     Point O;
     
     Cycle() = default;
     Cycle(const Point& A, double b, double c);
     Cycle(const Point& A, const Vector& V);
     Cycle(const Point& O, double R);
-    Cycle(double a, double b, double c, double d, double R);
+    Cycle(double a, double b, double c, double d);
     Cycle(const Point& A, const Point& B, double alpha = 0);
     Cycle(const Point& A, const Point& B, const Point& C);
     
@@ -110,7 +114,8 @@ double cos(const Cycle& X, const Cycle& Y);
 
 double operator*(const Cycle& X, const Cycle& Y);
 
-Cycle Split(const Cycle& X, const Cycle& Y, double lambda); 
+Cycle Split(const Cycle& X, const Cycle& Y, double lambda);
+Cycle Split(const Cycle& X, const Cycle& Y, double x, double y);
 
 class Digon {
 public:
@@ -164,6 +169,7 @@ public:
 
     Orientation get_euclidean_orientation() const;
 
+    Cycle cycle(double x, double y, double z) const;
     std::vector<Cycle> get_sides() const;
     std::vector<Cycle> get_bisectors() const;
     std::vector<Cycle> get_cevians(const Point& X, const Point& Y, const Point& Z) const;

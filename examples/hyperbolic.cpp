@@ -102,7 +102,15 @@ void myGlutReshape( int x, int y ) {
 
 /***************************************** myGlutDisplay() *****************/
 
-void myGlutDisplay() {    
+
+double coss(const Cycle& X, const Cycle& Y) {
+	double norm_x = sqrt(-4 * X.a * X.d + X.b * X.b + X.c * X.c);
+	double norm_y = sqrt(-4 * Y.a * Y.d + Y.b * Y.b + Y.c * Y.c);
+
+	return (2 * (X.a * Y.d + Y.a * X.d) - X.b * Y.b - X.c * Y.c) / norm_x / norm_y;
+}
+
+void myGlutDisplay() {
     glClearColor( .9f, .9f, .9f, 1.0f );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
@@ -117,7 +125,7 @@ void myGlutDisplay() {
     //Cycle aa = hline(T.A, T.B);
     
     //aa.draw();
-    
+   
     for (const Point& P : points) {
         //Point Q = {mouse.x, sy - mouse.y};    
 		if (dist(P, mouse) <= point_rad) {    
@@ -125,9 +133,14 @@ void myGlutDisplay() {
 		} else {
 		    glColor3d(0.3, 0.3, 1.0);
 		}
-		P.draw();   
+		P.draw();
     }
     glColor3d(0.3, 0.3, 1.0);
+    
+    Cycle& aa = T.aa;
+    Cycle& bb = T.bb;
+    
+    std::cout << aa * bb << " <---> " << coss(aa, bb) << std::endl; 
     
     glFlush();
     glutSwapBuffers();
@@ -230,6 +243,7 @@ int main(int argc, char* argv[]) {
     //GLUI_Master.set_glutIdleFunc( myGlutIdle );
     GLUI_Master.set_glutIdleFunc( NULL );
 
+    glLineWidth(3);
     glutMainLoop();
 
     return EXIT_SUCCESS;

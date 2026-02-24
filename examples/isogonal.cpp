@@ -31,6 +31,11 @@ Point mouse;
 
 int main_window;
 
+extern int angle_step;
+
+void alpha_trans(int x);
+void beta_trans(int x);
+void gamma_trans(int x);
 
 /**************************************** myGlutKeyboard() **********/
 void myGlutKeyboard(unsigned char Key, int x, int y) {
@@ -52,13 +57,34 @@ void myGlutMenu(int value) {
 /***************************************** myGlutMouse() **********/
 void myGlutMouse(int button, int button_state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON && button_state == GLUT_DOWN) {
-        //Point Q = {mouse.x, sy - mouse.y};    
         for (int i = 0; i < points.size(); ++i) {
             if (dist(mouse, points[i]) <= point_rad) {
                 pressed[i] = true;
             }       
         }
     }
+    if (button == 3 && button_state == GLUT_DOWN) {
+        if (dist(mouse, A) <= point_rad) {
+            alpha_trans(angle_step);
+        }
+        if (dist(mouse, B) <= point_rad) {
+            beta_trans(angle_step);
+        }        
+        if (dist(mouse, C) <= point_rad) {
+            gamma_trans(angle_step);
+        }
+    }
+    if (button == 4 && button_state == GLUT_DOWN) {
+        if (dist(mouse, A) <= point_rad) {
+            alpha_trans(-angle_step);
+        }
+        if (dist(mouse, B) <= point_rad) {
+            beta_trans(-angle_step);
+        }        
+        if (dist(mouse, C) <= point_rad) {
+            gamma_trans(-angle_step);
+        }
+    }    
 }
 
 
@@ -67,21 +93,21 @@ void myGlutMotion(int x, int y) {
     for (int i = 0; i < points.size(); ++i) {
         if (pressed[i]) {
             points[i].x += x - mouse.x;
-            points[i].y += y - mouse.y;
+            points[i].y += sy - y - mouse.y;
         }
     }
     
     //std::cout << x << "  " << y << std::endl;
 
     mouse.x = x;
-    mouse.y = y;
+    mouse.y = sy - y;
 
     glutPostRedisplay();
 }
 
 void myGlutPassiveMotion(int x, int y) {
     mouse.x = x;
-    mouse.y = y;
+    mouse.y = sy - y;
     
     for (int i = 0; i < points.size(); ++i) {
         pressed[i] = false;
@@ -183,13 +209,8 @@ void circumcircle_cb(int control) {
     glutPostRedisplay();
 }
 
-void alpha_trans(int control) {
-    static int prev = 0;
-    static int angle = 0;
-    //static int alpha = 60;    
-    angle = static_cast<int>(angles[0]);
-    alpha_ += angle - prev;
-    prev = angle;
+void alpha_trans(int x) {
+    alpha_ += x;
     
     int minn = std::max(std::max(0, beta_ + gamma_ - 540), std::abs(beta_ - gamma_) - 180);
     int maxx = std::min(std::min(360, beta_ + gamma_ + 180), -std::abs(beta_ - gamma_) + 540);
@@ -203,13 +224,8 @@ void alpha_trans(int control) {
     glutPostRedisplay();
 }
 
-void beta_trans(int control) {
-    static int prev = 0;
-    static int angle = 0;
-    //static int beta = 60;    
-    angle = static_cast<int>(angles[1]);
-    beta_ += angle - prev;
-    prev = angle;
+void beta_trans(int x) {
+    beta_ += x;
     
     int minn = std::max(std::max(0, alpha_ + gamma_ - 540), std::abs(alpha_ - gamma_) - 180);
     int maxx = std::min(std::min(360, alpha_ + gamma_ + 180), -std::abs(alpha_ - gamma_) + 540);    
@@ -224,13 +240,8 @@ void beta_trans(int control) {
     glutPostRedisplay();
 }
 
-void gamma_trans(int control) {
-    static int prev = 0;
-    static int angle = 0;
-    //static int gamma = 60;    
-    angle = static_cast<int>(angles[2]);
-    gamma_ += angle - prev;
-    prev = angle;
+void gamma_trans(int x) {
+    gamma_ += x;
     
     int minn = std::max(std::max(0, alpha_ + beta_ - 540), std::abs(alpha_ - beta_) - 180);
     int maxx = std::min(std::min(360, alpha_ + beta_ + 180), -std::abs(alpha_ - beta_) + 540);
@@ -278,12 +289,7 @@ int main(int argc, char* argv[]) {
     GLUI *glui = GLUI_Master.create_glui( "GLUI", 0, 800, 50 ); /* name, flags, x, and y */
     
     new GLUI_Checkbox(glui, "Bisectors", 0, 0, bisectors_cb);
-    new GLUI_Checkbox(glui, "Circumcircle", 0, 0, circumcircle_cb);    
-            
-    new GLUI_Translation(glui, "Alpha", GLUI_TRANSLATION_X, &angles[0], 0, alpha_trans);    
-    new GLUI_Translation(glui, "Beta", GLUI_TRANSLATION_X, &angles[1], 0, beta_trans);     
-    new GLUI_Translation(glui, "Gamma", GLUI_TRANSLATION_X, &angles[2], 0, gamma_trans);     
-
+    new GLUI_Checkbox(glui, "Circumcircle", 0, 0, circumcircle_cb);
     new GLUI_Button(glui, "Quit", 0, (GLUI_Update_CB)exit);
 
     glui->set_main_gfx_window(main_window);
@@ -292,6 +298,7 @@ int main(int argc, char* argv[]) {
     //GLUI_Master.set_glutIdleFunc( myGlutIdle );
     GLUI_Master.set_glutIdleFunc( NULL );
 
+    glLineWidth(3);
     glutMainLoop();
 
     return EXIT_SUCCESS;
