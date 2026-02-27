@@ -12,9 +12,13 @@ extern double point_rad;// = 5;
 extern int sx; // = 800;
 extern int sy; // = 600;
 
-double lambda = 1.33;
-double mu = -2.13;
-double nu = 1.0 / lambda / mu;
+float lambdas[2]{1.0, 1.0};
+const double lambda_step = 0.01;
+bool hyperbolic = false;
+
+double lambda = 1;
+double mu = 1.0;
+double nu = 1.0;
 
 //float angles[3]{M_PI / 4, M_PI / 4, M_PI / 4};
 
@@ -96,21 +100,19 @@ void myGlutMotion(int x, int y) {
     for (int i = 0; i < points.size(); ++i) {
         if (pressed[i]) {
             points[i].x += x - mouse.x;
-            points[i].y += y - mouse.y;
+            points[i].y += sy - y - mouse.y;
         }
     }
-    
-    //std::cout << x << "  " << y << std::endl;
 
     mouse.x = x;
-    mouse.y = y;
+    mouse.y = sy - y;
 
     glutPostRedisplay();
 }
 
 void myGlutPassiveMotion(int x, int y) {
     mouse.x = x;
-    mouse.y = y;
+    mouse.y = sy - y;
     
     for (int i = 0; i < points.size(); ++i) {
         pressed[i] = false;
@@ -144,8 +146,13 @@ void myGlutDisplay() {
     //gluOrtho2D(0.0, sx, 0.0, sy);
     gluOrtho2D(0, sx, 0, sy);    
     glViewport(0, 0, sx, sy);
+    
+    if (hyperbolic) {
+        T.hyperbolic();
+    } else {
+        T.recompute();
+    }
 
-    T.recompute();
     T.draw();
     
     const Cycle& aa = T.aa;
@@ -182,35 +189,10 @@ void myGlutDisplay() {
     double sinb = sin(aa, cc);
     double sinc = sin(aa, bb);    
     
-    //double sina2 = sqrt((1 + cosa)/2 );// this is cosa/2 in fact, not sin
-    //double sinb2 = sqrt((1 + cosb)/ 2) ;
-    //double sinc2 = sqrt((1 + cosc) / 2);
-    
-    double cosa1 = cos(bb, la);
-    double cosa2 = cos(la, cc);
-    double cosb1 = cos(cc, lb);
-    double cosb2 = cos(lb, aa);
-    double cosc1 = cos(aa, lc);
-    double cosc2 = cos(lc, bb);
-    
     double cosab = cosa*cosb - sina*sinb;
     double cosbc = cosb*cosc - sinb*sinc;
     double cosac = cosa*cosc - sina*sinc;
     
-    double sina1 = sin(bb, la);
-    double sina2 = sin(la, cc);
-    double sinb1 = sin(cc, lb);
-    double sinb2 = sin(lb, aa);
-    double sinc1 = sin(aa, lc);
-    double sinc2 = sin(lc, bb); 
-    
-    //std::cout << cosa1 << "  " << cosa2 << std::endl;   
-    //std::cout << cosb1 << "  " << cosb2 << std::endl;   
-    //std::cout << cosc1 << "  " << cosc2 << std::endl;
-    
-    //std::cout << cos(T.alpha / 2) - sin(T.beta / 2) - sin(T.gamma / 2) << std::endl; 
-    //std::cout << -cos(T.alpha / 2) + sin(T.beta / 2) - sin(T.gamma / 2) << std::endl; 
-    //std::cout << -cos(T.alpha / 2) - sin(T.beta / 2) + sin(T.gamma / 2) << std::endl;
     
     double x = lambda * nu;
     double y = lambda;
@@ -225,46 +207,13 @@ void myGlutDisplay() {
     auto sqr = [](double x) {return x*x;};
     
     double t = sqr(x*sina+y*sinb+z*sinc) + 2*x*y*(cosc + cosab) + 2*x*z*(cosb+cosac) + 2*y*z*(cosa+cosbc);
-    
-    //double X = fabs(x * sina / sina2);
-    //double Y = fabs(y * sinb / sinb2);
-    //double Z = fabs(z * sinc / sinc2);
-    
-    //double X = fabs(nu * sina / sina2);
-    //double X = fabs(nu * sqrt(1 + lambda*lambda + 2 * lambda * cosa));
-    //double Y = fabs(sinb / sinb1);
-    //double Y = fabs(1.0 / mu * sqrt(1 + mu*mu + 2 * mu * cosb));
-    
-    //double Z = fabs(sinc / sinc2);
-    //double Z = fabs(sqrt(1 + nu*nu + 2 * nu * cosc));
-    
     double X = fabs(x) * sqrt(y*y+2*y*z*cosa+z*z);
     double Y = fabs(y) * sqrt(x*x+2*x*z*cosb+z*z);
-    double Z = fabs(z) * sqrt(x*x+2*x*y*cosc+y*y);    
-    
-   // std::cout << X << "  " << fabs(nu * sina / sina2) << std::endl;
-    //std::cout << Y << "  " << fabs(sinb / sinb1) << std::endl; 
-    //std::cout << Z << "   " << fabs(sinc / sinc2) << std::endl;
-    
-    //std::cout << "T: " << t << std::endl;
-    
-    std::cout << X + Y - Z << std::endl;
-    std::cout << X - Y + Z << std::endl;
-    std::cout << -X + Y + Z << std::endl;
-       
-    
-    //std::cout << nu * sina / sina2 - sinb / sinb1 - sinc / sinc2 << std::endl;
-    //std::cout << lambda * sinb / sinb2 - sinc / sinc1 - sina / sina2 << std::endl;
-    //std::cout << mu * sinc / sinc2 - sina / sina1 - sinb / sinb2 << std::endl;
-        
-    //std::cout << lambda << "   " << sina1 / sina2 << std::endl;
-    //std::cout << mu << "   " << sinb1 / sinb2 << std::endl;
-    //std::cout << nu << "   " << sinc1 / sinc2 << std::endl;
-    //std::cout << 1.0 / nu * cosa1 + mu * cosa2 - sinb / sinb1 - sinc / sinc2 << std::endl;
-    //std::cout << 1.0 / lambda * cosb1 + nu * cosb2 - sinc / sinc1 - sina / sina2 << std::endl;
-    //std::cout << 1.0 / mu * cosc1 + lambda * cosc2 - sina / sina1 - sinb / sinb2 << std::endl;    
-
-    
+    double Z = fabs(z) * sqrt(x*x+2*x*y*cosc+y*y);     
+   
+    //std::cout << X + Y - Z << std::endl;
+    //std::cout << X - Y + Z << std::endl;
+    //std::cout << -X + Y + Z << std::endl;
     
     for (const Point& P : points) {
         //Point Q = {mouse.x, sy - mouse.y};    
@@ -275,13 +224,21 @@ void myGlutDisplay() {
 		}
 		P.draw();   
     }
-    glColor3d(0.3, 0.3, 1.0);
-    
+    glColor3d(0.3, 0.3, 1.0);    
     
     glFlush();
     glutSwapBuffers();
 }
 
+void hyperbolic_cb(int control) {
+    if (hyperbolic) {
+        alpha_ = static_cast<int>(T.alpha / M_PI * 180);
+        beta_ = static_cast<int>(T.beta / M_PI * 180);
+        gamma_ = static_cast<int>(T.gamma / M_PI * 180);
+    }
+    hyperbolic = !hyperbolic;
+    glutPostRedisplay();
+}
 
 void alpha_trans(int x) {
     alpha_ += x;
@@ -329,6 +286,18 @@ void gamma_trans(int x) {
     glutPostRedisplay();
 }
 
+void lambda_trans(int x) {
+    lambda = lambda_step * static_cast<int>(lambdas[0]);
+    nu = 1.0 / lambda / mu;
+    glutPostRedisplay();
+}
+
+void mu_trans(int x) {
+    mu = lambda_step * static_cast<int>(lambdas[1]);
+    nu = 1.0 / lambda / mu;
+    glutPostRedisplay();
+}
+
 
 /**************************************** main() ********************/
 
@@ -361,6 +330,10 @@ int main(int argc, char* argv[]) {
     /****************************************/
 
     GLUI *glui = GLUI_Master.create_glui( "GLUI", 0, 800, 50 ); /* name, flags, x, and y */
+    
+    new GLUI_Checkbox(glui, "Hyperbolic geometry", 0, 0, hyperbolic_cb);
+    new GLUI_Translation(glui, "Lambda", GLUI_TRANSLATION_X, &lambdas[0], 0, lambda_trans); 
+    new GLUI_Translation(glui, "Mu", GLUI_TRANSLATION_X, &lambdas[1], 0, mu_trans); 
 
     new GLUI_Button(glui, "Quit", 0, (GLUI_Update_CB)exit);
 
@@ -370,6 +343,7 @@ int main(int argc, char* argv[]) {
     //GLUI_Master.set_glutIdleFunc( myGlutIdle );
     GLUI_Master.set_glutIdleFunc( NULL );
 
+    glLineWidth(3);
     glutMainLoop();
 
     return EXIT_SUCCESS;

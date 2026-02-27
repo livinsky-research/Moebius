@@ -69,8 +69,6 @@ void myGlutMotion(int x, int y) {
             points[i].y = std::fmax(0, points[i].y);
         }
     }
-    
-    //std::cout << x << "  " << y << std::endl;
 
     mouse.x = x;
     mouse.y = sy - y;
@@ -122,9 +120,6 @@ void myGlutDisplay() {
 
     T.hyperbolic();
     T.draw();
-    //Cycle aa = hline(T.A, T.B);
-    
-    //aa.draw();
    
     for (const Point& P : points) {
         //Point Q = {mouse.x, sy - mouse.y};    
@@ -136,11 +131,6 @@ void myGlutDisplay() {
 		P.draw();
     }
     glColor3d(0.3, 0.3, 1.0);
-    
-    Cycle& aa = T.aa;
-    Cycle& bb = T.bb;
-    
-    std::cout << aa * bb << " <---> " << coss(aa, bb) << std::endl; 
     
     glFlush();
     glutSwapBuffers();
