@@ -16,7 +16,7 @@ double dist2(const Point& A, const Point& B);
 double area(double a, double b, double c);
 
 void line(const Point& A, const Point& B);
-void circle(const Point& A, double r, int t);
+void circle(const Point& A, double r);
 void arc(const Point& A, const Point& B, double alpha);
 
 // midpoint

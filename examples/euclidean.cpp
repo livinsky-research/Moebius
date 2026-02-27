@@ -192,7 +192,7 @@ void myGlutDisplay() {
         Point O = Barycentric(A, B, C, a * cosa, b * cosb, c * cosc);
         Point H = Barycentric(A, B, C, (a*a + c*c - b*b) * (a*a + b*b - c*c), (b*b + c*c - a*a) * (a*a + b*b - c*c), (b*b + c*c - a*a) * (a*a + c*c - b*b));
         Point E = O * H;
-        circle(E, R / 2, 2);
+        circle(E, R / 2);
     }
     if (medians) {
         Point M = Barycentric(A, B, C, 1, 1, 1);
@@ -232,7 +232,7 @@ void myGlutDisplay() {
         glColor3d(0.4, 0.0, 0.0);    
         Point I = Barycentric(A, B, C, a, b, c);
         I.draw();
-        circle(I, r, 2);
+        circle(I, r);
     }
     if (excircles) {
         glColor3d(0.2, 0.0, 0.0);    
@@ -242,15 +242,15 @@ void myGlutDisplay() {
         Ia.draw();
         Ib.draw();
         Ic.draw();
-        circle(Ia, ra, 2);
-        circle(Ib, rb, 2);
-        circle(Ic, rc, 2);
+        circle(Ia, ra);
+        circle(Ib, rb);
+        circle(Ic, rc);
     }    
     if (circumcircle) {
         glColor3d(0.0, 0.0, 1.0);
         Point O = Barycentric(A, B, C, a * cosa, b * cosb, c * cosc);
         O.draw();
-        circle(O, R, 2);
+        circle(O, R);
     }
     if (lemoine) {
         glColor3d(0.0, 0.4, 0.4);
@@ -517,6 +517,7 @@ int main(int argc, char* argv[]) {
     //GLUI_Master.set_glutIdleFunc( myGlutIdle );
     GLUI_Master.set_glutIdleFunc( NULL );
 
+    glLineWidth(3);
     glutMainLoop();
 
     return EXIT_SUCCESS;
