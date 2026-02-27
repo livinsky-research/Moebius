@@ -96,6 +96,9 @@ struct Cycle {
 // hyperbolic geometry oriented line A --> B
 Cycle hline(const Point& A, const Point& B);
 
+// a common perperdicular to two lines on the hyperbolic plane
+Cycle hperpendicular(const Cycle& X, const Cycle& Y);
+
 // intersection of cycles. Returns 0, 1, or 2 points
 std::vector<Point> operator^(const Cycle& X, const Cycle& Y);
 

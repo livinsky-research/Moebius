@@ -356,6 +356,14 @@ Cycle hline(const Point& A, const Point& B) {
     return Cycle(O, R);
 }
 
+Cycle hperpendicular(const Cycle& X, const Cycle& Y) {
+    double d = dist(X.O, Y.O);
+    double t = 0.5 * (1.0 + (X.R * X.R - Y.R * Y.R ) / d / d);
+    Point O = X.O + t * (Y.O - X.O);
+    double R = sqrt(fabs(t * t * d * d  - X.R * X.R));
+    return Cycle(O, R);
+}
+
 std::vector<Point> operator^(const Cycle& X, const Cycle& Y) {
     if (X.a == 0 && Y.a == 0) {
         // a pair of lines

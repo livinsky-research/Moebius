@@ -171,14 +171,43 @@ void myGlutDisplay() {
     nb.draw();
     nc.draw();
     
-    Cycle n = T.cycle(1.0, -nu, lambda * nu);
+    Cycle nn = T.cycle(1.0, -nu, lambda * nu);
     
-    if (n.virt) {
-        glColor3d(0.7, 0.0, 0.0); 
-    } else {
-        glColor3d(0.0, 0.7, 0.0);     
+    if (hyperbolic) {
+		glColor3d(0.8, 0.8, 0.0);
+		if (fabs(aa * na) >= 1.0) {
+		    Cycle pa = hperpendicular(aa, na);
+		    pa.draw();
+		} else {
+		    auto PP = aa ^ na;
+		    Point Na = {PP[0].x, fabs(PP[0].y)};
+		    Na.draw();
+		}
+		if (fabs(bb * nb) >= 1.0) {
+		    Cycle pb = hperpendicular(bb, nb);
+		    pb.draw();
+		} else {
+		    auto PP = bb ^ nb;
+		    Point Nb = {PP[0].x, fabs(PP[0].y)};
+		    Nb.draw();
+		}
+		if (fabs(cc * nc) >= 1.0) {
+		    Cycle pc = hperpendicular(cc, nc);
+		    pc.draw();
+		} else {
+		    auto PP = cc ^ nc;
+		    Point Nc = {PP[0].x, fabs(PP[0].y)};
+		    Nc.draw();
+		}
     }
-    n.draw();  
+    
+    glColor3d(0.0, 0.7, 0.0);
+    if (!nn.virt) {
+        nn.draw();
+    } else {
+        Point N = nn.O + Vector{0.0, fabs(nn.R)}; 
+        N.draw();
+    }
     
     for (const Point& P : points) {
         //Point Q = {mouse.x, sy - mouse.y};    
@@ -289,7 +318,7 @@ int main(int argc, char* argv[]) {
     glutInitWindowPosition(50, 50);
     glutInitWindowSize(sx, sy);
 
-    main_window = glutCreateWindow("Moebius Triangle");
+    main_window = glutCreateWindow("Menelaus Theorem");
     glutDisplayFunc( myGlutDisplay );
     glutReshapeFunc( myGlutReshape );
     glutKeyboardFunc( myGlutKeyboard );

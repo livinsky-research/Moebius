@@ -169,8 +169,20 @@ void myGlutDisplay() {
     
     la.draw();
     lb.draw();
-    lc.draw();  
+    lc.draw();
     
+    glColor3d(0.0, 0.7, 0.0);
+    if (fabs(la * lb) < 1.0) {
+        auto PP = la ^ lb;
+        for (const Point& Q : PP) {
+            Q.draw();        
+        }
+    } else {
+		if (hyperbolic) {	    
+		    Cycle nn = hperpendicular(la, lb);
+		    nn.draw();
+		}
+    }
     for (const Point& P : points) {
         //Point Q = {mouse.x, sy - mouse.y};    
 		if (dist(P, mouse) <= point_rad) {    
@@ -311,7 +323,7 @@ int main(int argc, char* argv[]) {
     glutInitWindowPosition(50, 50);
     glutInitWindowSize(sx, sy);
 
-    main_window = glutCreateWindow("Moebius Triangle");
+    main_window = glutCreateWindow("Ceva's Theorem");
     glutDisplayFunc( myGlutDisplay );
     glutReshapeFunc( myGlutReshape );
     glutKeyboardFunc( myGlutKeyboard );
