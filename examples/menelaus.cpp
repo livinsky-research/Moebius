@@ -14,15 +14,14 @@ extern int sy; // = 600;
 
 float lambdas[2]{1.0, 1.0};
 const double lambda_step = 0.01;
-bool hyperbolic = false;
 
-double lambda = 1;
-double mu = 1.0;
-double nu = -1.0;
+double lambda = -0.51; //-0.34; //-0.49; //-0.81;//1.23; //2.83;
+double mu = -0.66;//-0.57; //-0.57; //-0.45; //-0.49; // 1.0;
+double nu = -1.0 / lambda / mu;
 
 //float angles[3]{M_PI / 4, M_PI / 4, M_PI / 4};
 
-std::vector<Point> points = {{300, 100}, {300, 500}, {600, 300}};
+std::vector<Point> points = {{300, 100}, {450, 400}, {600, 300}};
 bool pressed[3] = {false, false, false};
 
 int alpha_ = 90;
@@ -101,6 +100,7 @@ void myGlutMotion(int x, int y) {
         if (pressed[i]) {
             points[i].x += x - mouse.x;
             points[i].y += sy - y - mouse.y;
+            points[i].y = std::fmax(0, points[i].y);
         }
     }
 
@@ -147,21 +147,16 @@ void myGlutDisplay() {
     gluOrtho2D(0, sx, 0, sy);    
     glViewport(0, 0, sx, sy);
     
-    if (hyperbolic) {
-        T.hyperbolic();
-    } else {
-        T.recompute();
-    }
-
+    T.recompute();
     T.draw();
     
     const Cycle& aa = T.aa;
     const Cycle& bb = T.bb;
     const Cycle& cc = T.cc;     
     
-    Cycle na = Split(bb, cc, lambda);
-    Cycle nb = Split(cc, aa, mu);
-    Cycle nc = Split(aa, bb, nu);
+    Cycle na = split(bb, cc, lambda);
+    Cycle nb = split(cc, aa, mu);
+    Cycle nc = split(aa, bb, nu);
     
     //la.O.draw();
     //lb.O.draw();
@@ -173,7 +168,7 @@ void myGlutDisplay() {
     
     Cycle nn = T.cycle(1.0, -nu, lambda * nu);
     
-    if (hyperbolic) {
+    if (T.hyperbolic) {
 		glColor3d(0.8, 0.8, 0.0);
 		if (fabs(aa * na) >= 1.0) {
 		    Cycle pa = hperpendicular(aa, na);
@@ -220,8 +215,6 @@ void myGlutDisplay() {
     }
    
     auto sqr = [](double x) {return x*x;};
-
-    
     for (const Point& P : points) {
         //Point Q = {mouse.x, sy - mouse.y};    
 		if (dist(P, mouse) <= point_rad) {    
@@ -238,12 +231,12 @@ void myGlutDisplay() {
 }
 
 void hyperbolic_cb(int control) {
-    if (hyperbolic) {
+    if (T.hyperbolic) {
         alpha_ = static_cast<int>(T.alpha / M_PI * 180);
         beta_ = static_cast<int>(T.beta / M_PI * 180);
         gamma_ = static_cast<int>(T.gamma / M_PI * 180);
     }
-    hyperbolic = !hyperbolic;
+    T.hyperbolic = !T.hyperbolic;
     glutPostRedisplay();
 }
 

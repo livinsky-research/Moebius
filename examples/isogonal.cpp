@@ -31,6 +31,9 @@ Point mouse;
 
 int main_window;
 
+bool bisectors = false;
+bool circumcircle = false;
+
 extern int angle_step;
 
 void alpha_trans(int x);
@@ -96,8 +99,6 @@ void myGlutMotion(int x, int y) {
             points[i].y += sy - y - mouse.y;
         }
     }
-    
-    //std::cout << x << "  " << y << std::endl;
 
     mouse.x = x;
     mouse.y = sy - y;
@@ -145,7 +146,7 @@ void myGlutDisplay() {
     T.recompute();
     
     const auto sides = T.get_sides();
-    const auto bisectors = T.get_bisectors();
+    const auto bss = T.get_bisectors();
     
     std::vector<Point> AA = sides[1] ^ sides[2];
     std::vector<Point> BB = sides[0] ^ sides[2];
@@ -155,15 +156,22 @@ void myGlutDisplay() {
     const Cycle& b = sides[1];
     const Cycle& c = sides[2];
     
-    Cycle ca(AA[0], P, AA[1]);
-    Cycle cb(BB[0], P, BB[1]);
-    Cycle cc(CC[0], P, CC[1]);
+    Cycle na(AA[0], P, AA[1]);
+    Cycle nb(BB[0], P, BB[1]);
+    Cycle nc(CC[0], P, CC[1]);
     
-    Cycle sca = bisectors[0].inv(ca);
-    Cycle scb = bisectors[1].inv(cb);
-    Cycle scc = bisectors[2].inv(cc);
+    Cycle ma = bss[0].inv(na);
+    Cycle mb = bss[1].inv(nb);
+    Cycle mc = bss[2].inv(nc);
     
     T.draw();
+    if (bisectors) {
+        T.draw_bisectors();
+    }
+    if (circumcircle) {
+        T.draw_circumcircle();
+    }
+    
     for (const Point& P : points) {
         //Point Q = {mouse.x, sy - mouse.y};    
 		if (dist(P, mouse) <= point_rad) {    
@@ -174,21 +182,17 @@ void myGlutDisplay() {
 		P.draw();   
     }
     
-    ca.draw();
-    cb.draw();
-    cc.draw();
+    na.draw();
+    nb.draw();
+    nc.draw();
     
     glColor3d(0.0, 0.7, 0.0);    
     
-    sca.draw();
-    scb.draw();
-    scc.draw();
+    ma.draw();
+    mb.draw();
+    mc.draw();
     
-    double prod = sin(b, ca) * sin(c, cb) * sin(a, cc) / sin(c, ca) / sin(a, cb) / sin(b, cc);
-   
-    std::cout << prod << std::endl;
-    
-    for (const Point& Q: sca ^ scb) {
+    for (const Point& Q: ma ^ mb) {
         Q.draw();
     }
     
@@ -200,12 +204,12 @@ void myGlutDisplay() {
 
 
 void bisectors_cb(int control) {
-    T.bisectors = !T.bisectors;
+    bisectors = !bisectors;
     glutPostRedisplay();
 }
 
 void circumcircle_cb(int control) {
-    T.circumcircle = !T.circumcircle;
+    circumcircle = !circumcircle;
     glutPostRedisplay();
 }
 

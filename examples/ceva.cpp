@@ -14,7 +14,6 @@ extern int sy; // = 600;
 
 float lambdas[2]{1.0, 1.0};
 const double lambda_step = 0.01;
-bool hyperbolic = false;
 
 double lambda = 1;
 double mu = 1.0;
@@ -101,6 +100,7 @@ void myGlutMotion(int x, int y) {
         if (pressed[i]) {
             points[i].x += x - mouse.x;
             points[i].y += sy - y - mouse.y;
+            points[i].y = std::fmax(0, points[i].y);
         }
     }
 
@@ -146,30 +146,25 @@ void myGlutDisplay() {
     //gluOrtho2D(0.0, sx, 0.0, sy);
     gluOrtho2D(0, sx, 0, sy);    
     glViewport(0, 0, sx, sy);
-    
-    if (hyperbolic) {
-        T.hyperbolic();
-    } else {
-        T.recompute();
-    }
 
+    T.recompute();
     T.draw();
     
     const Cycle& aa = T.aa;
     const Cycle& bb = T.bb;
     const Cycle& cc = T.cc;     
     
-    Cycle la = Split(bb, cc, lambda);
-    Cycle lb = Split(cc, aa, mu);
-    Cycle lc = Split(aa, bb, nu);
-    
-    //la.O.draw();
-    //lb.O.draw();
-    //lc.O.draw(); 
+    Cycle la = split(bb, cc, lambda);
+    Cycle lb = split(cc, aa, mu);
+    Cycle lc = split(aa, bb, nu);
     
     la.draw();
     lb.draw();
     lc.draw();
+    
+    for (const auto& P : la ^ lb) {
+        //write_point(P);
+    }   
     
     glColor3d(0.0, 0.7, 0.0);
     if (fabs(la * lb) < 1.0) {
@@ -178,7 +173,7 @@ void myGlutDisplay() {
             Q.draw();        
         }
     } else {
-		if (hyperbolic) {	    
+		if (T.hyperbolic) {	    
 		    Cycle nn = hperpendicular(la, lb);
 		    nn.draw();
 		}
@@ -193,9 +188,9 @@ void myGlutDisplay() {
 		P.draw();   
     }
     
-    double cosa = cos(bb, cc);
-    double cosb = cos(aa, cc);
-    double cosc = cos(aa, bb);
+    double cosa = -cos(bb, cc);
+    double cosb = -cos(aa, cc);
+    double cosc = -cos(aa, bb);
     
     double sina = sin(bb, cc);
     double sinb = sin(aa, cc);
@@ -204,8 +199,7 @@ void myGlutDisplay() {
     double cosab = cosa*cosb - sina*sinb;
     double cosbc = cosb*cosc - sinb*sinc;
     double cosac = cosa*cosc - sina*sinc;
-    
-    
+
     double x = lambda * nu;
     double y = lambda;
     double z = 1;
@@ -221,7 +215,7 @@ void myGlutDisplay() {
     double t = sqr(x*sina+y*sinb+z*sinc) + 2*x*y*(cosc + cosab) + 2*x*z*(cosb+cosac) + 2*y*z*(cosa+cosbc);
     double X = fabs(x) * sqrt(y*y+2*y*z*cosa+z*z);
     double Y = fabs(y) * sqrt(x*x+2*x*z*cosb+z*z);
-    double Z = fabs(z) * sqrt(x*x+2*x*y*cosc+y*y);     
+    double Z = fabs(z) * sqrt(x*x+2*x*y*cosc+y*y);  
    
     //std::cout << X + Y - Z << std::endl;
     //std::cout << X - Y + Z << std::endl;
@@ -243,12 +237,12 @@ void myGlutDisplay() {
 }
 
 void hyperbolic_cb(int control) {
-    if (hyperbolic) {
+    if (T.hyperbolic) {
         alpha_ = static_cast<int>(T.alpha / M_PI * 180);
         beta_ = static_cast<int>(T.beta / M_PI * 180);
         gamma_ = static_cast<int>(T.gamma / M_PI * 180);
     }
-    hyperbolic = !hyperbolic;
+    T.hyperbolic = !T.hyperbolic;
     glutPostRedisplay();
 }
 

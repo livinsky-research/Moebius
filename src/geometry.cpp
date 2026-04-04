@@ -13,6 +13,10 @@ std::ostream& operator << (std::ostream& s, const Vector& V) {
     return s << "(" << V.x << ", " << V.y << ")";
 }
 
+inline double sqr(double x) {
+    return x*x;
+}
+
 const double eps = 0.001;
 std::uniform_real_distribution<double> unif(0, 1);
 std::default_random_engine re;
@@ -105,7 +109,7 @@ double operator*(const Vector& U, const Vector& V) {
 }
 
 double operator^(const Vector& U, const Vector& V) {
-    return U.x * V.y - U.y - V.x;
+    return U.x * V.y - U.y * V.x;
 }
 
 Point operator+(const Point& A, const Vector& V) {
@@ -185,6 +189,11 @@ Cycle::Cycle(double a, double b, double c, double d) : a(a), b(b), c(c), d(d) {
         if (b*b + c*c - 4*a*d < 0) {
             virt = true;
         }
+        if (fabs(R) > 1e6) {
+            a = 0;
+            R = INFINITY;
+        }
+        
     } else {
         R = INFINITY;
     }
@@ -226,13 +235,14 @@ Cycle::Cycle(const Point& A, const Point& B, const Point& C) {
     
     u.normalize();
     v.normalize();
-     
-    if (fabs(u * v) < eps) {
+
+    if (fabs(u ^ v) < eps) {
         a = 0;
         b = A.y - B.y;
         c = B.x - A.x;
         d = A.x * B.y - B.x * A.y;
         R = INFINITY;
+        return;        
     }
     // this is circumcircle
     double a2 = dist2(B, C);
@@ -373,7 +383,7 @@ std::vector<Point> operator^(const Cycle& X, const Cycle& Y) {
         u.normalize();
         v.normalize();
         
-        if (fabs(u * v) < eps) {
+        if (fabs(u ^ v) < eps) {
             // lines are parallel. We assume the intersection is empty
             return std::vector<Point>();
         }
@@ -409,7 +419,7 @@ std::vector<Point> operator^(const Cycle& X, const Cycle& Y) {
     double r = fabs(Y.R);
     double d = dist(X.O, Y.O);
     
-    if (R + r < d + eps  || fabs(R - r) > d + eps) {
+    if (R + r < d - eps || fabs(R - r) > d + eps) {
         return {};
     }
     
@@ -427,7 +437,82 @@ std::vector<Point> operator^(const Cycle& X, const Cycle& Y) {
     return {X.O + x * V + h * W, X.O + x * V - h * W};
 }
 
-std::vector<Cycle> Apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z) {
+
+std::vector<double> solve_quadratic(std::vector<double> cc) {
+    if (cc.size() != 3) {
+        std::cout << "ERROR! Incorrect input in quadratic equation";
+        exit(1);
+    }
+
+    double a = cc[0];
+    double b = cc[1];
+    double c = cc[2];
+    double eps = 1e-7;
+    
+    if (fabs(a) < eps) {
+        if (b) {
+            return {-c / b};
+        }
+        if (c) {
+            return {};
+        } else {
+            return {0};
+        }
+    }
+    double D = b * b - 4 * a * c;
+    if (D < -eps) {
+        return {};
+    }
+    if (D < eps) {
+        return {- b / 2 / a}; 
+    }
+
+    D = sqrt(D);
+    return { (-b - D) / 2 / a, (-b + D) / 2 / a};
+}
+
+std::vector<double> solve_linear23(std::vector<double> a, std::vector<double> b, bool solve_homogeneous=false) {
+    if (a.size() != 4 || b.size() != 4) {
+        std::cout << "ERROR! Incorrect input in 2*3 system of linear equations" << std::endl;
+        exit(1);
+    }
+    if (solve_homogeneous) {
+        // ignore the fourth column; get the nonzero solution by taking cross product
+        return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
+    }
+    // now get any solution to the full system
+    double d0 = fabs(a[1] * b[2] - a[2] * b[1]);
+    double d1 = fabs(a[2] * b[0] - a[0] * b[2]);
+    double d2 = fabs(a[0] * b[1] - a[1] * b[0]);
+    
+    int i = 0;
+    if (d1 > d0 && d1 >= d2) {
+        i = 1;
+    }
+    if (d1 > d0 && d2 > d1) {
+        i = 2;
+    }
+    
+    a[3] -= a[i];
+    b[3] -= b[i];
+    
+    int j = (i + 1) % 3;
+    int k = (i + 2) % 3;
+    
+    double d = a[j] * b[k] - a[k] * b[j]; 
+    
+    std::vector<double> res(3);
+    
+    res[i] = 1.0;
+    res[j] = (a[3] * b[k] - a[k] * b[3]) / d;
+    res[k] = (a[j] * b[3] - a[3] * b[j]) / d;
+    
+    return res;
+}
+
+
+std::vector<Cycle> apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z) {
+    // the dot product is (2 * (a * T + X * d) - b * Y - c * Z) = 1 
     if (X.a == 0 && X.b == 0 && X.c == 0) {
         // three lines. Return two to four circles
         return {};
@@ -488,10 +573,10 @@ std::vector<Cycle> Apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z) {
         return res;
     }
     if (X.a == 0 && Y.a && Z.a == 0) {
-        return Apollonius(Y, Z, X);
+        return apollonius(Y, Z, X);
     }
     if (X.a == 0 && Y.a == 0 && Z.a) {
-        return Apollonius(Z, X, Y);
+        return apollonius(Z, X, Y);
     }
 
 
@@ -500,10 +585,10 @@ std::vector<Cycle> Apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z) {
         return {};   
     }
     if (X.a && Y.a == 0 && Z.a) {
-        return Apollonius(Z, X, Y);
+        return apollonius(Z, X, Y);
     }
     if (X.a == 0 && Y.a && Z.a) {
-        return Apollonius(Y, Z, X);
+        return apollonius(Y, Z, X);
     }
     // three circles case
     const Point& Ia = X.O;
@@ -514,40 +599,41 @@ std::vector<Cycle> Apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z) {
     std::vector<Cycle> res;
     for (const auto& e : ee) {
         // solve the system of equations
-        // (X.O.x - x)^2 + (X.O.y - y)^2 = (R + e[0]* X.R)^2
-        // (Y.O.x - x)^2 + (Y.O.y - y)^2 = (R + e[1]* Y.R)^2
-        // (Z.O.x - x)^2 + (Z.O.y - y)^2 = (R + e[2]* Z.R)^2
-        // subtract 1 from 2 and 3
-        // Y.O.x^2 - X.O.x^2 - 2x(X.O.x - Y.O.x)    + (Y.O.y - y)^2 = (R + e[1]* Y.R)^2
-        double ra = X.R * e[0];
-        double rb = Y.R * e[1];
-        double rc = Z.R * e[2];
-
-        Vector a1 = 2 * (Ia - Ib);
-        Vector a2 = 2 * (Ia - Ic);
-        Vector b{2 * (-ra + rb), 2 * (-ra + rc)};
-        Vector c{rb * rb - ra * ra - Ib.norm2() + Ia.norm2(), rc * rc - ra * ra - Ic.norm2() + Ia.norm2()}; 
-    
-        Vector n = solve(a1, a2, b);
-        Vector m = solve(a1, a2, c);
-        m -= Vector{Ia.x, Ia.y};
-
-        double qa = 1 - n.norm2();
-        double qb = 2 * ra - 2 * m * n;
-        double qc = ra * ra - m.norm2();
-        double disc = qb * qb - 4 * qa * qc;
+        // (x - X.O.x)^2 + (y - X.O.y)^2 = (R + e[0]*X.R)^2
+        // (x - Y.O.x)^2 + (y - Y.O.y)^2 = (R + e[1]*Y.R)^2
+        // (x - Z.O.x)^2 + (y - Z.O.y)^2 = (R + e[2]*Z.R)^2
         
-        if (disc >= -eps) {
-            double R = (-qb + sqrt(fmax(disc, 0))) / 2 / qa;
-            Point E = Ia + m + R * n;
-            res.emplace_back(E, R);
+        // subtract 1 from 2 and 3
+        //  x(X.O.x - Y.O.x) + y(X.O.y - Y.O.y) + R(e[1]*Y.R - e[0]*X.R) = (-Y.R^2 + X.R^2 + Y.O.x^2 - X.O.x^2 + Y.O.y^2 - X.O.y^2) / 2
+        //  x(X.O.x - Z.O.x) + y(X.O.y - Z.O.y) + R(e[2]*Z.R - e[0]*X.R) = (-Z.R^2 + X.R^2 + Z.O.x^2 - X.O.x^2 + Z.O.y^2 - X.O.y^2) / 2
+        
+        
+        std::vector<double> a = {X.O.x - Y.O.x, X.O.y - Y.O.y, -e[1] * Y.R + e[0] * X.R, (sqr(Y.R) - sqr(X.R) - sqr(Y.O.x) - sqr(Y.O.y) + sqr(X.O.x) + sqr(X.O.y)) / 2};
+        std::vector<double> b = {X.O.x - Z.O.x, X.O.y - Z.O.y, -e[2] * Z.R + e[0] * X.R, (sqr(Z.R) - sqr(X.R) - sqr(Z.O.x) - sqr(Z.O.y) + sqr(X.O.x) + sqr(X.O.y)) / 2};
+        
+        std::vector<double> res0 = solve_linear23(a, b, true);
+        std::vector<double> res1 = solve_linear23(a, b);
+        
+        // now solve the quadratic equation that remains after inserting this into 1
+        // x = res1[0] + t * res0[0]
+        // y = res1[1] + t * res0[1]
+        // R = res1[2] + t * res0[2]
+        
+        std::vector cc = {sqr(res0[0]) + sqr(res0[1]) - sqr(res0[2]), 
+                          2 * res0[0] * (res1[0] - X.O.x) + 2 * res0[1] * (res1[1] - X.O.y) - 2 * res0[2] * (res1[2] + e[0] * X.R),
+                          sqr(res1[0] - X.O.x) + sqr(res1[1] - X.O.y) - sqr(res1[2] + e[0] * X.R)};
+                          
+        for (double t : solve_quadratic(cc)) {
+            Point O = {res1[0] + t * res0[0], res1[1] + t * res0[1]};
+            double R = res1[2] + t * res0[2];
+            res.emplace_back(O, R);
         }
     }
     return res;
 
 }
 
-std::vector<Cycle> Bisectors(const Cycle& X, const Cycle& Y) {
+std::vector<Cycle> bisectors(const Cycle& X, const Cycle& Y) {
 	if (X.a == 0 && Y.a == 0) {
         Vector V = {X.b, X.c};
         Vector W = {Y.b, Y.c};
@@ -579,7 +665,7 @@ std::vector<Cycle> Bisectors(const Cycle& X, const Cycle& Y) {
         return {Cycle(X.O - X.R * V, dist(X.O - X.R * V, A)), Cycle(X.O + X.R * V, dist(X.O + X.R * V, A))};
     }
     if (X.a == 0 && Y.a) {
-        return Bisectors(Y, X);
+        return bisectors(Y, X);
     }
     // two circles
     double R = X.R;
@@ -637,7 +723,7 @@ std::vector<Cycle> Bisectors(const Cycle& X, const Cycle& Y) {
     return {Cycle(O, dist(O, A)), Cycle(Q, dist(Q, A))};
 }
 
-Cycle Orthogonal(const Cycle& X, const Point& A, const Point& B) {
+Cycle orthogonal(const Cycle& X, const Point& A, const Point& B) {
     // a cycle passing through A and B and orthogonal to X
     Point C = X.inv(A);
     Point D = X.inv(B);
@@ -678,35 +764,31 @@ double cos(const Cycle& X, const Cycle& Y) {
    }
    if (X.a && Y.a == 0) {
        Vector v{Y.b, Y.c};
-       return (Y.b * X.O.x + Y.c * X.O.y + Y.d) / v.norm() / X.R;
+       return -(Y.b * X.O.x + Y.c * X.O.y + Y.d) / v.norm() / X.R;
    }
    if (X.a == 0 && Y.a) {
        return cos(Y, X);
    }
    double d2 = dist2(X.O, Y.O);
-   return (d2 - X.R * X.R - Y.R * Y.R) / 2 / X.R / Y.R;
+   return (X.R * X.R + Y.R * Y.R - d2) / 2 / X.R / Y.R;
 }
 
 double operator*(const Cycle& X, const Cycle& Y) {
     return cos(X, Y);
 }
 
-inline double sqr(double x) {
-    return x*x;
-}
-
-Cycle Split(const Cycle& X, const Cycle& Y, double lambda) {
+Cycle split(const Cycle& X, const Cycle& Y, double lambda) {
     double norm_x = sqrt(-4 * X.a * X.d + X.b * X.b + X.c * X.c);
     double norm_y = sqrt(-4 * Y.a * Y.d + Y.b * Y.b + Y.c * Y.c);
     double a = X.a / norm_x - lambda * Y.a / norm_y;
     double b = X.b / norm_x - lambda * Y.b / norm_y;
     double c = X.c / norm_x - lambda * Y.c / norm_y;
     double d = X.d / norm_x - lambda * Y.d / norm_y;
-    
+
     return {a, b, c, d};
 
-/*
-    double rx = X.R;
+
+  /*  double rx = X.R;
     double ry = Y.R;
 
     double u = -ry / (lambda * rx - ry);
@@ -733,14 +815,24 @@ Cycle Split(const Cycle& X, const Cycle& Y, double lambda) {
     return Cycle(O, R);*/
 }
 
-Cycle Split(const Cycle& X, const Cycle& Y, double x, double y) {
+Cycle split(const Cycle& X, const Cycle& Y, double x, double y) {
     double norm_x = sqrt(-4 * X.a * X.d + X.b * X.b + X.c * X.c);
     double norm_y = sqrt(-4 * Y.a * Y.d + Y.b * Y.b + Y.c * Y.c);
     double a = x * X.a / norm_x + y * Y.a / norm_y;
     double b = x * X.b / norm_x + y * Y.b / norm_y;
     double c = x * X.c / norm_x + y * Y.c / norm_y;
     double d = x * X.d / norm_x + y * Y.d / norm_y;
+    double norm = sqrt(-4 * a * d + b * b + c * c);
     
+    a /= norm;
+    b /= norm;
+    c /= norm;
+    d /= norm;
+    
+    if (fabs(a) < 1e-7) {
+        a = 0;
+    }
+
     return {a, b, c, d};
 }
 
@@ -756,87 +848,6 @@ Orientation Triangle::get_euclidean_orientation() const {
     return ABC;
 }
 
-void Triangle::hyperbolic() {
-    double a = dist(B, C);
-    double b = dist(C, A);
-    double c = dist(A, B);
-
-    auto orient = get_euclidean_orientation();
-
-    alpha0 = acos((b * b + c * c - a * a) / (2 * b * c));
-    beta0 = acos((a * a + c * c - b * b) / (2 * a * c));
-    gamma0 = acos((a * a + b * b - c * c) / (2 * a * b));
-
-    aa = hline(B, C);
-    bb = hline(C, A);
-    cc = hline(A, B);
-
-    orientation = aa.side(A) == -1? ABC : ACB;  
-  
-    alpha = acos(std::clamp(bb * cc, -1.0, 1.0));
-    beta = acos(std::clamp(aa * cc, -1.0, 1.0));
-    gamma = acos(std::clamp(aa * bb, -1.0, 1.0));
-    
-    if (orientation == ABC) {
-		if (orient == ABC) {
-			a0 = (beta - beta0 + gamma - gamma0 - alpha + alpha0) / 2;
-			b0 = (alpha - alpha0 + gamma - gamma0 - beta + beta0) / 2;
-			c0 = (alpha - alpha0 + beta - beta0 - gamma + gamma0) / 2;
-		} else {
-		    a0 = -M_PI + (4 * M_PI - beta - beta0 - gamma - gamma0 + alpha + alpha0) / 2;
-		    b0 = -M_PI + (4 * M_PI - alpha - alpha0 - gamma - gamma0 + beta + beta0) / 2;
-		    c0 = -M_PI + (4 * M_PI - alpha - alpha0 - beta - beta0 + gamma + gamma0) / 2;
-		}    
-    } else {
-		if (orient == ACB) {
-			a0 = (beta - beta0 + gamma - gamma0 - alpha + alpha0) / 2;
-			b0 = (alpha - alpha0 + gamma - gamma0 - beta + beta0) / 2;
-			c0 = (alpha - alpha0 + beta - beta0 - gamma + gamma0) / 2;
-		} else {
-		    a0 = -M_PI + (4 * M_PI - beta - beta0 - gamma - gamma0 + alpha + alpha0) / 2;
-		    b0 = -M_PI + (4 * M_PI - alpha - alpha0 - gamma - gamma0 + beta + beta0) / 2;
-		    c0 = -M_PI + (4 * M_PI - alpha - alpha0 - beta - beta0 + gamma + gamma0) / 2;
-		}    
-    }
-
-    double delta = (M_PI + alpha + beta + gamma) / 4;
-
-    omega_a = orient > 0? Cycle(B, C, -delta + a0) : Cycle(C, B, delta + a0);
-    omega_b = orient > 0? Cycle(C, A, -delta + b0) : Cycle(A, C, delta + b0);
-    omega_c = orient > 0? Cycle(A, B, -delta + c0) : Cycle(B, A, delta + c0);
-
-    std::vector<Point> ha = omega_b ^ aa;
-    std::vector<Point> hb = omega_c ^ bb;
-    std::vector<Point> hc = omega_a ^ cc;
-
-    if (ha.size() == 1) {
-        ha.push_back(ha.back());
-    }
-    if (hb.size() == 1) {
-        hb.push_back(hb.back());
-    }
-    if (hc.size() == 1) {
-        hc.push_back(hc.back());
-    }
-
-    Ha = dist(C, ha[0]) > dist(C, ha[1])? ha[0] : ha[1];
-    Hb = dist(A, hb[0]) > dist(A, hb[1])? hb[0] : hb[1];
-    Hc = dist(B, hc[0]) > dist(B, hc[1])? hc[0] : hc[1];
-    
-    std::vector<Cycle> inexcircles = Apollonius(aa, bb, cc);
-    
-    int aa_side = aa.side(A);
-    int bb_side = bb.side(B);
-    int cc_side = cc.side(C);
-
-    for (const Cycle& circle : inexcircles) {
-        if (aa.side(circle.sample()) == aa_side && bb.side(circle.sample()) == bb_side && cc.side(circle.sample()) == cc_side) {
-            inc = circle;
-            break;
-        }
-    }
-
-}
 
 void Triangle::recompute() {
     double a = dist(B, C);
@@ -849,28 +860,63 @@ void Triangle::recompute() {
     beta0 = acos((a * a + c * c - b * b) / (2 * a * c));
     gamma0 = acos((a * a + b * b - c * c) / (2 * a * b));
     
-    // solving the system
-    // b0 + alpha0 + c0 = alpha
-    // a0 + beta0 + c0 = beta
-    // a0 + gamma0 + b0 = gamma
-    
-    a0 = (beta - beta0 + gamma - gamma0 - alpha + alpha0) / 2;
-    b0 = (alpha - alpha0 + gamma - gamma0 - beta + beta0) / 2;
-    c0 = (alpha - alpha0 + beta - beta0 - gamma + gamma0) / 2;
-   
-    // solving the system
-    // b0 + alpha0 + c0 = 2pi - alpha
-    // a0 + beta0 + c0 = 2pi - beta
-    // a0 + gamma0 + b0 = 2pi - gamma
-    if (orient < 0) {
-        a0 = -M_PI + (4 * M_PI - beta - beta0 - gamma - gamma0 + alpha + alpha0) / 2;
-        b0 = -M_PI + (4 * M_PI - alpha - alpha0 - gamma - gamma0 + beta + beta0) / 2;
-        c0 = -M_PI + (4 * M_PI - alpha - alpha0 - beta - beta0 + gamma + gamma0) / 2;
-    }
+    if (hyperbolic) {
+		aa = hline(B, C);
+		bb = hline(C, A);
+		cc = hline(A, B);
 
-    aa = orient > 0? Cycle(B, C, a0) : Cycle(C, B, a0);
-    bb = orient > 0? Cycle(C, A, b0) : Cycle(A, C, b0);
-    cc = orient > 0? Cycle(A, B, c0) : Cycle(B, A, c0);
+		orientation = aa.side(A) == -1? ABC : ACB;  
+
+		alpha = acos(std::clamp(-(bb * cc), -1.0, 1.0));
+		beta = acos(std::clamp(-(aa * cc), -1.0, 1.0));
+		gamma = acos(std::clamp(-(aa * bb), -1.0, 1.0));
+		//std::cout << alpha << " " << beta << " " << gamma << std::endl;
+
+		if (orientation == ABC) {
+			if (orient == ABC) {
+				a0 = (beta - beta0 + gamma - gamma0 - alpha + alpha0) / 2;
+				b0 = (alpha - alpha0 + gamma - gamma0 - beta + beta0) / 2;
+				c0 = (alpha - alpha0 + beta - beta0 - gamma + gamma0) / 2;
+			} else {
+				a0 = -M_PI + (4 * M_PI - beta - beta0 - gamma - gamma0 + alpha + alpha0) / 2;
+				b0 = -M_PI + (4 * M_PI - alpha - alpha0 - gamma - gamma0 + beta + beta0) / 2;
+				c0 = -M_PI + (4 * M_PI - alpha - alpha0 - beta - beta0 + gamma + gamma0) / 2;
+			}    
+		} else {
+			if (orient == ACB) {
+				a0 = (beta - beta0 + gamma - gamma0 - alpha + alpha0) / 2;
+				b0 = (alpha - alpha0 + gamma - gamma0 - beta + beta0) / 2;
+				c0 = (alpha - alpha0 + beta - beta0 - gamma + gamma0) / 2;
+			} else {
+				a0 = -M_PI + (4 * M_PI - beta - beta0 - gamma - gamma0 + alpha + alpha0) / 2;
+				b0 = -M_PI + (4 * M_PI - alpha - alpha0 - gamma - gamma0 + beta + beta0) / 2;
+				c0 = -M_PI + (4 * M_PI - alpha - alpha0 - beta - beta0 + gamma + gamma0) / 2;
+			}    
+		}    
+    } else {
+		// solving the system
+		// b0 + alpha0 + c0 = alpha
+		// a0 + beta0 + c0 = beta
+		// a0 + gamma0 + b0 = gamma
+		
+		a0 = (beta - beta0 + gamma - gamma0 - alpha + alpha0) / 2;
+		b0 = (alpha - alpha0 + gamma - gamma0 - beta + beta0) / 2;
+		c0 = (alpha - alpha0 + beta - beta0 - gamma + gamma0) / 2;
+	   
+		// solving the system
+		// b0 + alpha0 + c0 = 2pi - alpha
+		// a0 + beta0 + c0 = 2pi - beta
+		// a0 + gamma0 + b0 = 2pi - gamma
+		if (orient < 0) {
+		    a0 = -M_PI + (4 * M_PI - beta - beta0 - gamma - gamma0 + alpha + alpha0) / 2;
+		    b0 = -M_PI + (4 * M_PI - alpha - alpha0 - gamma - gamma0 + beta + beta0) / 2;
+		    c0 = -M_PI + (4 * M_PI - alpha - alpha0 - beta - beta0 + gamma + gamma0) / 2;
+		}
+
+		aa = orient > 0? Cycle(B, C, a0) : Cycle(C, B, a0);
+		bb = orient > 0? Cycle(C, A, b0) : Cycle(A, C, b0);
+		cc = orient > 0? Cycle(A, B, c0) : Cycle(B, A, c0);
+    }
 
     double delta = (M_PI + alpha + beta + gamma) / 4;
 
@@ -896,18 +942,8 @@ void Triangle::recompute() {
     Hb = dist(A, hb[0]) > dist(A, hb[1])? hb[0] : hb[1];
     Hc = dist(B, hc[0]) > dist(B, hc[1])? hc[0] : hc[1];
     
-    std::vector<Cycle> inexcircles = Apollonius(aa, bb, cc);
-    
-    int aa_side = aa.side(A);
-    int bb_side = bb.side(B);
-    int cc_side = cc.side(C);
+    compute_inexcircles();
 
-    for (const Cycle& circle : inexcircles) {
-        if (aa.side(circle.sample()) == aa_side && bb.side(circle.sample()) == bb_side && cc.side(circle.sample()) == cc_side) {
-            inc = circle;
-            break;
-        }
-    }
 }
 
 Cycle Triangle::cycle(double x, double y, double z) const {
@@ -930,7 +966,7 @@ std::vector<Cycle> Triangle::get_sides() const {
 std::vector<Cycle> Triangle::get_bisectors() const {
     std::vector<Cycle> bs;
     
-    return {Split(bb, cc, 1), Split(cc, aa, 1), Split(aa, bb, 1)};
+    return {split(bb, cc, 1), split(cc, aa, 1), split(aa, bb, 1)};
 
     auto orient = get_euclidean_orientation();
 
@@ -941,9 +977,9 @@ std::vector<Cycle> Triangle::get_bisectors() const {
     Vector bc = orient == ABC ? (C - B).rot(-a0).normalize() : (C - B).rot(a0).normalize();
     Vector cb = orient == ABC ? (B - C).rot(a0).normalize() : (B - C).rot(-a0).normalize();
     
-    std::vector<Cycle> a_bisectors = Bisectors(bb, cc);
-    std::vector<Cycle> b_bisectors = Bisectors(aa, cc);
-    std::vector<Cycle> c_bisectors = Bisectors(aa, bb);
+    std::vector<Cycle> a_bisectors = bisectors(bb, cc);
+    std::vector<Cycle> b_bisectors = bisectors(aa, cc);
+    std::vector<Cycle> c_bisectors = bisectors(aa, bb);
     
     if (fabs(alpha - M_PI) > eps) {
         if (a_bisectors.size() == 1) {
@@ -985,10 +1021,14 @@ std::vector<Cycle> Triangle::get_bisectors() const {
     return bs;
 }
 
+std::vector<Cycle> Triangle::get_external_bisectors() const {
+    return {split(bb, cc, -1), split(cc, aa, -1), split(aa, bb, -1)};
+}
+
 std::vector<Cycle> Triangle::get_cevians(const Point& X, const Point& Y, const Point& Z) const {
     std::vector<Point> AA = bb ^ cc;
     std::vector<Point> BB = aa ^ cc;
-    std::vector<Point> CC = aa ^ bb;    
+    std::vector<Point> CC = aa ^ bb;
     return {Cycle(AA[0], X, AA[1]), Cycle(BB[0], Y, BB[1]), Cycle(CC[0], Z, CC[1])};
 }
 
@@ -997,12 +1037,42 @@ std::vector<Cycle> Triangle::get_cevians(const Point& P) const {
 }
 
 std::vector<Cycle> Triangle::get_altitudes() const {
-    
-    return {Split(bb, cc, cos(beta), -cos(gamma)), Split(cc, aa, cos(gamma), -cos(alpha)), Split(aa, bb, cos(alpha), -cos(beta))};
-
-
+    return {split(bb, cc, cos(beta), -cos(gamma)), split(cc, aa, cos(gamma), -cos(alpha)), split(aa, bb, cos(alpha), -cos(beta))};
     std::vector<Point> AA = bb ^ cc;
     std::vector<Point> BB = aa ^ cc;
     std::vector<Point> CC = aa ^ bb;
-    return {Orthogonal(aa, AA[0], AA[1]), Orthogonal(bb, BB[0], BB[1]), Orthogonal(cc, CC[0], CC[1])};
+    return {orthogonal(aa, AA[0], AA[1]), orthogonal(bb, BB[0], BB[1]), orthogonal(cc, CC[0], CC[1])};
 }
+
+void Triangle::compute_inexcircles() {
+    std::vector<Cycle> all_tangent = apollonius(aa, bb, cc);
+    std::vector<Cycle> bs = get_bisectors();
+    std::vector<Cycle> exbs = get_external_bisectors();
+    
+    incircles.clear();
+    excircles.clear();
+    
+    double eps = 1e-6;
+    for (const Cycle& X : all_tangent) {
+        if (fabs(X * bs[0]) < eps && fabs(X * bs[1]) < eps && fabs(X * bs[2]) < eps) {
+            incircles.push_back(X);
+        }
+    }
+    for (const Cycle& X : all_tangent) {
+        if (fabs(X * bs[0]) < eps && fabs(X * exbs[1]) < eps && fabs(X * exbs[2]) < eps) {
+            excircles.push_back(X);
+        }
+    }
+    for (const Cycle& X : all_tangent) {
+        if (fabs(X * exbs[0]) < eps && fabs(X * bs[1]) < eps && fabs(X * exbs[2]) < eps) {
+            excircles.push_back(X);
+        }
+    }
+    for (const Cycle& X : all_tangent) {
+        if (fabs(X * exbs[0]) < eps && fabs(X * exbs[1]) < eps && fabs(X * bs[2]) < eps) {
+            excircles.push_back(X);
+        }
+    }
+}
+
+

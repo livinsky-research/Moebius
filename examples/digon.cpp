@@ -13,6 +13,7 @@ extern int sx; // = 800;
 extern int sy; // = 600;
 
 float angles[2]{0.0, 0.0};
+bool bisector = false;
 
 std::vector<Point> points = {{300, 400}, {600, 400}};
 bool pressed[2] = {false, false};
@@ -81,8 +82,6 @@ void myGlutMotion(int x, int y) {
             points[i].y += sy - y - mouse.y;
         }
     }
-    
-    //std::cout << x << "  " << y << std::endl;
 
     mouse.x = x;
     mouse.y = sy - y;
@@ -115,7 +114,6 @@ void myGlutReshape( int x, int y ) {
 /***************************************** myGlutDisplay() *****************/
 
 void myGlutDisplay() {
-
     glClearColor( .9f, .9f, .9f, 1.0f );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     glMatrixMode(GL_PROJECTION);
@@ -124,6 +122,10 @@ void myGlutDisplay() {
     glViewport(0, 0, sx, sy);
 
     D.draw();
+    if (bisector) {
+        D.draw_bisector();
+    }
+    
     for (const Point& P : points) {
 		if (dist(P, mouse) <= point_rad) {
 		    glColor3d(1.0, 0.3, 0.3);
@@ -138,7 +140,7 @@ void myGlutDisplay() {
 }
 
 void bisector_cb(int control) {
-    D.bisector = !D.bisector;
+    bisector = !bisector;
     glutPostRedisplay();
 }
 
@@ -197,8 +199,7 @@ int main(int argc, char* argv[]) {
     GLUI *glui = GLUI_Master.create_glui( "GLUI", 0, 800, 50 ); /* name, flags, x, and y */
     
     new GLUI_Checkbox(glui, "Bisector", 0, 0, bisector_cb);
-    new GLUI_Translation(glui, "Digon position", GLUI_TRANSLATION_X, &angles[1], 0, orientation_trans); 
-    
+    new GLUI_Translation(glui, "Digon position", GLUI_TRANSLATION_X, &angles[1], 0, orientation_trans);
     new GLUI_Button(glui, "Quit", 0, (GLUI_Update_CB)exit);
 
     glui->set_main_gfx_window(main_window);

@@ -64,16 +64,16 @@ Point Trilinear(const Point& A, const Point& B, const Point& C, double x, double
 Vector solve(const Vector& a1, const Vector& a2, const Vector& b);
 
 struct Cycle {
-    // line and circle in the form
+    // oriented line and circle in the form
     // a(x^2 + y^2) + bx + cy + d = 0
     // a = 0 iff we have a line
     // R is computed from R^2 = b^2/4a^a + c^2/4a^2 - d/a
-    // sign R must be the equal to sign a
+    // sign R must be the equal to sign a for proper orientation
     double a, b, c, d;
     double R;
-    bool virt = false;
     Point O;
-    
+    bool virt = false;
+
     Cycle() = default;
     Cycle(const Point& A, double b, double c);
     Cycle(const Point& A, const Vector& V);
@@ -81,14 +81,15 @@ struct Cycle {
     Cycle(double a, double b, double c, double d);
     Cycle(const Point& A, const Point& B, double alpha = 0);
     Cycle(const Point& A, const Point& B, const Point& C);
-    
+
     Point sample() const;
     Point inv(const Point& A) const;
     Cycle inv(const Cycle& X) const;
+
     int side(const Point& A) const;
     void invert();
     double prod(const Point& P, const Vector& V) const;
-    
+
     void draw() const;
 };
 
@@ -103,13 +104,13 @@ Cycle hperpendicular(const Cycle& X, const Cycle& Y);
 std::vector<Point> operator^(const Cycle& X, const Cycle& Y);
 
 // returns all cycles tangent to X, Y, and Z
-std::vector<Cycle> Apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z);
+std::vector<Cycle> apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z);
 
 // returns 1 or 2 cycles that map X into Y
-std::vector<Cycle> Bisectors(const Cycle& X, const Cycle& Y);
+std::vector<Cycle> get_bisectors(const Cycle& X, const Cycle& Y);
 
 // draw a cycle passing through A and B that is orthogonal to X
-Cycle Orthogonal(const Cycle& X, const Point& A, const Point& B);
+Cycle orthogonal(const Cycle& X, const Point& A, const Point& B);
 
 //Cycle operator *(const Cycle& P, const Cycle& Q);
 double sin(const Cycle& X, const Cycle& Y);
@@ -117,12 +118,18 @@ double cos(const Cycle& X, const Cycle& Y);
 
 double operator*(const Cycle& X, const Cycle& Y);
 
-Cycle Split(const Cycle& X, const Cycle& Y, double lambda);
-Cycle Split(const Cycle& X, const Cycle& Y, double x, double y);
+Cycle split(const Cycle& X, const Cycle& Y, double lambda);
+Cycle split(const Cycle& X, const Cycle& Y, double x, double y);
+
+//generate tikz code for latex
+void write_point(const Point& A);
+void write_cycle(const Point& A, const Point& B, const Cycle& X);
+void write_cycle(const Point& A, const Cycle& X, double degs);
+void write_cycle(const Cycle& X, double degs1, double degs2);
 
 class Digon {
 public:
-    Digon(const Point& A, const Point& B, double alpha) : A(A), B(B), alpha(alpha), orientation(0.3), bisector(false) {
+    Digon(const Point& A, const Point& B, double alpha) : A(A), B(B), alpha(alpha), orientation(0.3) {
     }
 
     const Point& A;
@@ -130,9 +137,9 @@ public:
 
     double alpha;
     double orientation;
-    bool bisector;
     
     void draw() const;
+    void draw_bisector() const;
 };
 
 enum Orientation {ABC = 1, ACB = -1};
@@ -141,7 +148,8 @@ Orientation operator!(const Orientation& orient);
 
 class Triangle {
 public:
-    Triangle(const Point& A, const Point& B, const Point& C, double alpha, double beta, double gamma) : A(A), B(B), C(C), alpha(alpha), beta(beta), gamma(gamma) {
+    Triangle(const Point& A, const Point& B, const Point& C, double alpha, double beta, double gamma, bool hyperbolic=false) : 
+    A(A), B(B), C(C), alpha(alpha), beta(beta), gamma(gamma), hyperbolic(hyperbolic) {
     }
 
     const Point& A;
@@ -152,33 +160,35 @@ public:
     double beta;
     double gamma;
 
+    bool hyperbolic;
+
     Orientation orientation = ABC;
 
-    bool euler = false;
-    bool circumcircle = false;
-    bool incircle = false;
-    bool excircles = false;
-    bool bisectors = false;
-    bool altitudes = false;
-    bool pseudoaltitudes = false;
-    bool omega = false;
-    bool brocard = false;
-
     void recompute();
-    void hyperbolic();
+    void compute_inexcircles();
+    
     double area() const;
+
     void draw() const;
     void draw_body() const;
+    void draw_bisectors() const;
+    void draw_altitudes() const;
+    void draw_pseudoaltitudes() const;
+    void draw_circumcircle() const;
+    void draw_incircle() const;
+    void draw_excircles() const;
+    void draw_euler_circle() const;
 
     Orientation get_euclidean_orientation() const;
 
     Cycle cycle(double x, double y, double z) const;
     std::vector<Cycle> get_sides() const;
     std::vector<Cycle> get_bisectors() const;
+    std::vector<Cycle> get_external_bisectors() const;   
     std::vector<Cycle> get_cevians(const Point& X, const Point& Y, const Point& Z) const;
     std::vector<Cycle> get_cevians(const Point& P) const;
     std::vector<Cycle> get_altitudes() const;
-
+    
     Cycle aa;
     Cycle bb;
     Cycle cc;
@@ -190,6 +200,9 @@ public:
     Cycle omega_a;
     Cycle omega_b;
     Cycle omega_c;
+    
+    std::vector<Cycle> incircles;
+    std::vector<Cycle> excircles;
 
     Cycle inc;
 
@@ -200,6 +213,5 @@ public:
     double alpha0;
     double beta0;
     double gamma0;
-
 };
 

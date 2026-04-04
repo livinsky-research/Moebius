@@ -12,6 +12,51 @@ const int n_segments = 150;
 int sx = 800;
 int sy = 600;
 
+const double s = 0.015;
+const double fx = 0;//10.0;
+const double fy = 0;//-10.0;
+
+
+void write_cycle(const Point& A, const Point& B, const Cycle& X) {
+	std::cout << "\\draw ";
+	std::cout.precision(6);
+ 	std::cout << "(" << std::fixed << fx + s * A.x << "," << fy + s * A.y << ") arc (";
+
+ 	double R = fabs(X.R); 	
+ 	double f1 = atan2(A.y - X.O.y, A.x - X.O.x) / M_PI * 180;
+ 	double f2 = atan2(B.y - X.O.y, B.x - X.O.x) / M_PI * 180;
+ 	
+    std::cout << f1 << ":" << f2 << ":" << s * R << ");" << std::endl;
+}
+
+void write_cycle(const Point& A, const Cycle& X, double degs) {
+	std::cout << "\\draw ";
+	std::cout.precision(6);
+ 	std::cout << "(" << std::fixed << fx + s * A.x << "," << fy + s * A.y << ") arc (";
+
+ 	double R = fabs(X.R); 	
+ 	double f1 = atan2(A.y - X.O.y, A.x - X.O.x) / M_PI * 180;
+ 	double f2 = f1 + degs;
+ 	
+    std::cout << f1 << ":" << f2 << ":" << s * R << ");" << std::endl;
+}
+
+void write_cycle(const Cycle& X, double f1, double f2) {
+	std::cout << "\\draw ";
+	std::cout.precision(6);
+	
+ 	double R = fabs(X.R);
+	Vector v = {cos(f1 / 180 * M_PI), sin(f1 / 180 * M_PI)};
+	Point A = X.O + R * v;
+	
+ 	std::cout << "(" << std::fixed << fx + s * A.x << "," << fy + s * A.y << ") arc (";
+    std::cout << f1 << ":" << f2 << ":" << s * R << ");" << std::endl;
+}
+
+
+void write_point(const Point& A) {
+    std::cout << "\\node [vertex] at (" << fx + s * A.x << "," << fy + s * A.y <<") {};" << std::endl;
+}
 
 void line(const Point& A, const Point& B) {
     glBegin(GL_LINE_LOOP);
@@ -36,9 +81,9 @@ void Vector::draw(const Point& X) const {
 }
 
 void Cycle::draw() const {
-    if (a) {
+    if (fabs(R) < 1e5) {
         circle(O, R);
-    } else {    
+    } else {
         glBegin(GL_LINE_STRIP);
         const double l = 5000;
         if (fabs(b) <= fabs(c)) {
@@ -107,6 +152,30 @@ void arc(const Point& A, const Point& B, double alpha) {
 		}    
     }
 	glVertex3d(B.x, B.y, 0);
+	return;
+	
+	std::cout << "\\draw ";
+	std::cout.precision(6);
+ 	std::cout << "(" << std::fixed << fx + s * A.x << "," << fy + s * A.y << ") arc (";
+
+    double d = dist(A, B); 	
+ 	double R = d / 2 / sin(alpha);
+ 	double t = d / 2 / tan(alpha);
+    double cx = (A.x + B.x) / 2 + (B.y - A.y) / d * t;
+    double cy = (A.y + B.y) / 2 + (A.x - B.x) / d * t; 	
+ 	
+ 	Point O{cx, cy};
+ 	
+ 	double f1 = atan2(A.y - O.y, A.x - O.x) / M_PI * 180;
+ 	double f2 = atan2(B.y - O.y, B.x - O.x) / M_PI * 180;
+ 	
+ 	if (f2 > f1) {
+ 	    f1 += 360;
+ 	}
+ 	
+    std::cout << f1 << ":" << f2 << ":" << s * R << ");" << std::endl;
+    std::cout << "\\node [vertex] at (" << fx + s * A.x << "," << fy + s * A.y <<") {};" << std::endl;
+    std::cout << "\\node [vertex] at (" << fx + s * B.x << "," << fy + s * B.y <<") {};" << std::endl;
 }
 
 void Point::draw() const {
@@ -176,13 +245,14 @@ void Digon::draw() const {
 	glEnd();
     glBegin(GL_LINE_STRIP);
 	arc(B, A, alpha / 2 - orientation);
-	glEnd();
-	
-	if (bisector) {
-        glBegin(GL_LINE_STRIP);
-        arc(A, B, orientation);
-        glEnd();
-	}	
+	glEnd();	
+}
+
+void Digon::draw_bisector() const {
+    glColor3d(0.0, 0.0, 0.0);
+    glBegin(GL_LINE_STRIP);
+    arc(A, B, orientation);
+    glEnd();
 }
 
 void Triangle::draw_body() const {
@@ -351,141 +421,69 @@ void Triangle::draw_body() const {
 }
 
 void Triangle::draw() const {   
-    int aa_side = -1;
-    int bb_side = -1;
-    int cc_side = -1;
-    
-    aa_side = aa.side(A);
-    bb_side = bb.side(B);
-    cc_side = cc.side(C);
-    
     draw_body();
-    
-    if (bisectors) {
-        const auto bs = get_bisectors();
-        for (const auto& b: bs) {
-            b.draw();
-        }
-    }
-    
-    if (circumcircle) {
-        Cycle circum_circle(A, B, C);
-        glColor3d(0.0, 0.0, 1.0);
-        circum_circle.draw();
-    }
-       
-    Cycle euler_circle(Ha, Hb, Hc);
-    
-    if (pseudoaltitudes) {
-        glColor3d(1.0, 0.0, 0.0);
-        
-        std::vector<Cycle> pseudoaltitudes = get_cevians(Ha, Hb, Hc);
-        for (const Cycle& p : pseudoaltitudes) {
-             p.draw();
-        }
-    }       
-
-    if (omega) {
-        glColor3d(1.0, 0.0, 0.0);
-        
-        omega_a.draw();
-        omega_b.draw();
-        omega_c.draw();
-    }
-    
-    if (altitudes) {
-        std::vector<Cycle> altitudes = get_altitudes();
-        Ha.draw();
-        Hb.draw();
-        Hc.draw();
-        
-        glColor3d(1.0, 0.5, 0.0);
-        for (const Cycle& h : altitudes) {
-             h.draw();
-        }
-    }    
-    
-    if (incircle || excircles) {
-        std::vector<Cycle> inexcircles = Apollonius(aa, bb, cc);
-        glColor3d(1.0, 0.0, 0.0);
-        
-        //std::cout << orient << ": " << aa_side << bb_side << cc_side <<  std::endl;
-        //std::cout << orient << ": " << inexcircles.size() << std::endl;
-        
-        std::vector<Cycle> ins;
-        for (const Cycle& circle : inexcircles) {
-            if (aa.side(circle.sample()) == aa_side && bb.side(circle.sample()) == bb_side && cc.side(circle.sample()) == cc_side) {
-                ins.push_back(circle);
-            }
-        }
-        
-        std::vector<Cycle> exs;
-        for (const Cycle& circle : inexcircles) {
-            if (aa.side(circle.sample()) == aa_side && bb.side(circle.sample()) == bb_side && cc.side(circle.sample()) != cc_side) {
-                exs.push_back(circle);
-            }
-            if (aa.side(circle.sample()) == aa_side && bb.side(circle.sample()) != bb_side && cc.side(circle.sample()) == cc_side) {
-                exs.push_back(circle);
-            }
-            if (aa.side(circle.sample()) != aa_side && bb.side(circle.sample()) == bb_side && cc.side(circle.sample()) == cc_side) {
-                exs.push_back(circle);
-            }
-        }        
-        
-        if (incircle) {
-            glColor3d(1.0, 0.6, 0.0);        
-            for (const Cycle& circle : ins) {
-                circle.draw();
-            }
-        }
-        if (excircles) {
-            glColor3d(1.0, 0.0, 0.0);        
-            for (const Cycle& circle : exs) {
-                circle.draw();
-            }
-
-            glColor3d(0.0, 0.0, 0.0);        
-            aa.draw();
-            bb.draw();
-            cc.draw();
-        }
-        
-        /*if (euler) {
-            std::vector<Cycle> euler_circles = Apollonius(exs[0], exs[1], exs[2]);
-            glColor3d(0.0, 0.7, 0.0);
-            for (const Cycle& circle : euler_circles) {
-                circle.draw();
-                break;
-            }            
-        }*/
-    }
-    
-    if (euler) {
-        glColor3d(0.0, 0.7, 0.0);
-        euler_circle.draw();
-    }
-
-    if (brocard) {
-        // c / b : a / c : b / a
-        double x = sin(gamma) / sin(beta);
-        double y = sin(alpha) / sin(gamma);
-        double z = sin(beta) / sin(alpha);
-        
-        
-        double lambda = y / x;
-        double mu = z / y;
-        double nu = x / z;
-        
-        Cycle bra = Split(aa, bb, lambda);
-        Cycle brb = Split(bb, cc, mu);
-        Cycle brc = Split(cc, aa, nu);
-        
-        glColor3d(0.0, 1.0, 0.0);              
-        
-        bra.draw();
-        brb.draw();
-        brc.draw();
-    }
-
 }
 
+void Triangle::draw_bisectors() const {
+    const auto bs = get_bisectors();
+    for (const auto& b: bs) {
+        b.draw();
+    }
+}
+
+void Triangle::draw_altitudes() const {
+    const auto altitudes = get_altitudes();
+    glColor3d(1.0, 0.5, 0.0);
+    for (const auto& h : altitudes) {
+         h.draw();             
+    }
+   
+    if (hyperbolic && fabs(altitudes[0] * altitudes[1]) > 1) {
+        Cycle hh = hperpendicular(altitudes[0], altitudes[2]);
+        hh.draw();
+    }
+}  
+
+void Triangle::draw_pseudoaltitudes() const {
+    //Ha.draw();
+    //Hb.draw();
+    //Hc.draw();
+    glColor3d(1.0, 0.0, 0.0);     
+    const auto pseudoaltitudes = get_cevians(Ha, Hb, Hc);
+    for (const auto& p : pseudoaltitudes) {
+         p.draw();
+    }
+}
+
+void Triangle::draw_circumcircle() const {
+    Cycle circumcircle(A, B, C);
+    glColor3d(0.0, 0.0, 1.0);
+    circumcircle.draw();
+}
+
+void Triangle::draw_incircle() const {
+    glColor3d(1.0, 0.5, 0.0);
+    for (const Cycle& incircle : incircles) {
+        incircle.draw();
+    }
+}
+
+void Triangle::draw_excircles() const {
+    glColor3d(1.0, 0.0, 0.0);
+    for (const Cycle& excircle : excircles) {
+        excircle.draw();
+    }
+    
+    glLineWidth(1);
+    glColor3d(0.0, 0.0, 0.0);
+    aa.draw();
+    bb.draw();
+    cc.draw();
+    glLineWidth(3);
+}
+
+void Triangle::draw_euler_circle() const {
+    Cycle euler_circle(Ha, Hb, Hc);
+    glColor3d(0.0, 0.7, 0.0);
+    euler_circle.draw();
+}

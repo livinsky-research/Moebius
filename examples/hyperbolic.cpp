@@ -21,10 +21,18 @@ int alpha_ = 60;
 int beta_ = 60;
 int gamma_ = 60;
 
+bool bisectors = false;
+bool altitudes = false;
+bool pseudoaltitudes = false;
+bool circumcircle = false;
+bool incircle = false;
+bool excircles = false;
+bool euler = false;
+
 Point& A = points[0];
 Point& B = points[1];
 Point& C = points[2];
-Triangle T(A, B, C, M_PI / 3, M_PI / 3, M_PI / 3);
+Triangle T(A, B, C, M_PI / 3, M_PI / 3, M_PI / 3, true);
 Point mouse;
 
 int main_window;
@@ -118,11 +126,31 @@ void myGlutDisplay() {
     gluOrtho2D(0, sx, 0, sy);
     glViewport(0, 0, sx, sy);
 
-    T.hyperbolic();
+    T.recompute();
     T.draw();
+    if (bisectors) {
+        T.draw_bisectors();
+    } 
+    if (altitudes) {
+        T.draw_altitudes();
+    } 
+    if (pseudoaltitudes) {
+        T.draw_pseudoaltitudes();
+    } 
+    if (circumcircle) {
+        T.draw_circumcircle();
+    } 
+    if (incircle) {
+        T.draw_incircle();
+    } 
+    if (excircles) {
+        T.draw_excircles();
+    }
+    if (euler) {
+        T.draw_euler_circle();
+    }
    
     for (const Point& P : points) {
-        //Point Q = {mouse.x, sy - mouse.y};    
 		if (dist(P, mouse) <= point_rad) {    
 		    glColor3d(1.0, 0.3, 0.3);
 		} else {
@@ -138,50 +166,39 @@ void myGlutDisplay() {
 
 
 void bisectors_cb(int control) {
-    T.bisectors = !T.bisectors;
+    bisectors = !bisectors;
     glutPostRedisplay();
 }
 
 void altitudes_cb(int control) {
-    T.altitudes = !T.altitudes;
-    glutPostRedisplay();
-}
-
-void omega_cb(int control) {
-    T.omega = !T.omega;
+    altitudes = !altitudes;
     glutPostRedisplay();
 }
 
 void pseudoaltitudes_cb(int control) {
-    T.pseudoaltitudes = !T.pseudoaltitudes;
+    pseudoaltitudes = !pseudoaltitudes;
     glutPostRedisplay();
 }
 
 void circumcircle_cb(int control) {
-    T.circumcircle = !T.circumcircle;
+    circumcircle = !circumcircle;
     glutPostRedisplay();
 }
 
 void incircle_cb(int control) {
-    T.incircle = !T.incircle;
+    incircle = !incircle;
     glutPostRedisplay();
 }
 
 void excircles_cb(int control) {
-    T.excircles = !T.excircles;
+    excircles = !excircles;
     glutPostRedisplay();
 }
 
 void euler_cb(int control) {
-    T.euler = !T.euler;
+    euler = !euler;
     glutPostRedisplay();
 }
-
-void brocard_cb(int control) {
-    T.brocard = !T.brocard;
-    glutPostRedisplay();
-}
-
 
 /**************************************** main() ********************/
 
@@ -217,13 +234,11 @@ int main(int argc, char* argv[]) {
     
     new GLUI_Checkbox(glui, "Bisectors", 0, 0, bisectors_cb);
     new GLUI_Checkbox(glui, "Altitudes", 0, 0, altitudes_cb);
-    new GLUI_Checkbox(glui, "Pseudoaltitudes", 0, 0, pseudoaltitudes_cb);
-    new GLUI_Checkbox(glui, "Omegas", 0, 0, omega_cb);    
+    new GLUI_Checkbox(glui, "Pseudoaltitudes", 0, 0, pseudoaltitudes_cb); 
     new GLUI_Checkbox(glui, "Circumcircle", 0, 0, circumcircle_cb);
     new GLUI_Checkbox(glui, "Incircle", 0, 0, incircle_cb);
     new GLUI_Checkbox(glui, "Excircles", 0, 0, excircles_cb);
     new GLUI_Checkbox(glui, "Euler circle", 0, 0, euler_cb);
-    new GLUI_Checkbox(glui, "Brocard points", 0, 0, brocard_cb);
 
     new GLUI_Button(glui, "Quit", 0, (GLUI_Update_CB)exit);
 
