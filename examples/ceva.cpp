@@ -154,27 +154,23 @@ void myGlutDisplay() {
     const Cycle& bb = T.bb;
     const Cycle& cc = T.cc;     
     
-    Cycle la = split(bb, cc, lambda);
-    Cycle lb = split(cc, aa, mu);
-    Cycle lc = split(aa, bb, nu);
+    Cycle na = split(bb, cc, lambda);
+    Cycle nb = split(cc, aa, mu);
+    Cycle nc = split(aa, bb, nu);
     
-    la.draw();
-    lb.draw();
-    lc.draw();
-    
-    for (const auto& P : la ^ lb) {
-        //write_point(P);
-    }   
-    
+    na.draw();
+    nb.draw();
+    nc.draw();
+
     glColor3d(0.0, 0.7, 0.0);
-    if (fabs(la * lb) < 1.0) {
-        auto PP = la ^ lb;
+    if (fabs(na * nb) < 1.0) {
+        auto PP = na ^ nb;
         for (const Point& Q : PP) {
             Q.draw();        
         }
     } else {
 		if (T.hyperbolic) {	    
-		    Cycle nn = hperpendicular(la, lb);
+		    Cycle nn = hperpendicular(na, nb);
 		    nn.draw();
 		}
     }

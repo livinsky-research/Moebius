@@ -531,10 +531,7 @@ std::vector<Cycle> apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z) {
         double coss = v * w;
         double cos_half = sqrt((coss + 1) / 2);
         double sin_half = sqrt((1 - coss) / 2);
-        double tan_half = sqrt((1 - coss) / (coss + 1));
-        
-        Vector u = (v + w).normalize();
-        
+
         std::vector<Cycle> res;
         std::vector<Vector> uu = {(v + w).normalize(), (v - w).normalize()};
         std::vector<int> ee = {1, -1};
@@ -591,9 +588,6 @@ std::vector<Cycle> apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z) {
         return apollonius(Y, Z, X);
     }
     // three circles case
-    const Point& Ia = X.O;
-    const Point& Ib = Y.O;
-    const Point& Ic = Z.O;
     const static std::vector<std::vector<int>> ee{{1,1,1}, {1,1,-1}, {1,-1,1}, {-1,1,1}, {1,-1,-1}, {-1,1,-1}, {-1,-1,1}, {-1,-1,-1}};
     
     std::vector<Cycle> res;
@@ -633,7 +627,7 @@ std::vector<Cycle> apollonius(const Cycle& X, const Cycle& Y, const Cycle& Z) {
 
 }
 
-std::vector<Cycle> bisectors(const Cycle& X, const Cycle& Y) {
+std::vector<Cycle> get_bisectors(const Cycle& X, const Cycle& Y) {
 	if (X.a == 0 && Y.a == 0) {
         Vector V = {X.b, X.c};
         Vector W = {Y.b, Y.c};
@@ -659,13 +653,12 @@ std::vector<Cycle> bisectors(const Cycle& X, const Cycle& Y) {
         }
         // two cicrles
 
-        Point& A = xy[0];
-        Point& B = xy[1];
+        const Point& A = xy[0];
 
         return {Cycle(X.O - X.R * V, dist(X.O - X.R * V, A)), Cycle(X.O + X.R * V, dist(X.O + X.R * V, A))};
     }
     if (X.a == 0 && Y.a) {
-        return bisectors(Y, X);
+        return get_bisectors(Y, X);
     }
     // two circles
     double R = X.R;
@@ -708,8 +701,7 @@ std::vector<Cycle> bisectors(const Cycle& X, const Cycle& Y) {
     }
    
     // two cycles
-    Point A = xy[0];
-    Point B = xy[1];   
+    const Point& A = xy[0];
     if (fabs(R - r) < eps) {
         // a circle and a line
         Point C = X.O * Y.O;
@@ -775,6 +767,34 @@ double cos(const Cycle& X, const Cycle& Y) {
 
 double operator*(const Cycle& X, const Cycle& Y) {
     return cos(X, Y);
+}
+
+double splitting(const Cycle& X, const Cycle& Y, const Cycle& Z) {
+    double norm_x = sqrt(-4 * X.a * X.d + X.b * X.b + X.c * X.c);
+    double norm_y = sqrt(-4 * Y.a * Y.d + Y.b * Y.b + Y.c * Y.c);
+    
+    std::vector<double> xx = {X.a / norm_x, X.b / norm_x, X.c / norm_x, X.d / norm_x};
+    std::vector<double> yy = {Y.a / norm_y, Y.b / norm_y, Y.c / norm_y, Y.d / norm_y};
+    std::vector<double> zz = {Z.a, Z.b, Z.c, Z.d};
+    std::vector<double> ll;
+    
+    for (int i = 0; i < 3; ++i) {
+        for (int j = i + 1; j < 4; ++j) {
+            double det = zz[i] * yy[j] - zz[j] * yy[i];
+            if (fabs(det) > 1e-9) {
+                ll.push_back((zz[i] * xx[j] - zz[j] * xx[i]) / det);
+            }
+        }
+    }
+    
+    if (ll.empty()) {
+        return 0;
+    }
+    double lambda = 0;
+    for (double l : ll) {
+        lambda += l;
+    }
+    return lambda / static_cast<double>(ll.size());
 }
 
 Cycle split(const Cycle& X, const Cycle& Y, double lambda) {
@@ -964,61 +984,7 @@ std::vector<Cycle> Triangle::get_sides() const {
 }
 
 std::vector<Cycle> Triangle::get_bisectors() const {
-    std::vector<Cycle> bs;
-    
     return {split(bb, cc, 1), split(cc, aa, 1), split(aa, bb, 1)};
-
-    auto orient = get_euclidean_orientation();
-
-    Vector ab = orient == ABC ? (B - A).rot(-c0).normalize() : (B - A).rot(c0).normalize();
-    Vector ba = orient == ABC ? (A - B).rot(c0).normalize() : (A - B).rot(-c0).normalize();
-    Vector ac = orient == ABC ? (C - A).rot(b0).normalize() : (C - A).rot(-b0).normalize();
-    Vector ca = orient == ABC ? (A - C).rot(-b0).normalize() : (A - C).rot(b0).normalize();       
-    Vector bc = orient == ABC ? (C - B).rot(-a0).normalize() : (C - B).rot(a0).normalize();
-    Vector cb = orient == ABC ? (B - C).rot(a0).normalize() : (B - C).rot(-a0).normalize();
-    
-    std::vector<Cycle> a_bisectors = bisectors(bb, cc);
-    std::vector<Cycle> b_bisectors = bisectors(aa, cc);
-    std::vector<Cycle> c_bisectors = bisectors(aa, bb);
-    
-    if (fabs(alpha - M_PI) > eps) {
-        if (a_bisectors.size() == 1) {
-            bs.push_back(a_bisectors[0]);
-        } else {  // size() == 2
-            Vector V = (ab + ac).normalize();
-            if (fabs(a_bisectors[0].prod(A, V)) > fabs(a_bisectors[1].prod(A, V))) {
-                bs.push_back(a_bisectors[0]);
-            } else {
-                bs.push_back(a_bisectors[1]);
-            }
-        }
-    }
-    if (fabs(beta - M_PI) > eps) {        
-        if (b_bisectors.size() == 1) {
-            bs.push_back(b_bisectors[0]);
-        } else { // size() == 2
-            Vector V = (ba + bc).normalize();
-            if (fabs(b_bisectors[0].prod(B, V)) > fabs(b_bisectors[1].prod(B, V))) {
-                bs.push_back(b_bisectors[0]);
-            } else {
-                bs.push_back(b_bisectors[1]);
-            }
-        }
-    }
-    if (fabs(gamma - M_PI) > eps) {            
-        if (c_bisectors.size() == 1) {
-            bs.push_back(c_bisectors[0]);
-        } else { // size() == 2
-            Vector V = (ca + cb).normalize();
-            if (fabs(c_bisectors[0].prod(C, V)) > fabs(c_bisectors[1].prod(C, V))) {
-                bs.push_back(c_bisectors[0]);
-            } else {
-                bs.push_back(c_bisectors[1]);
-            }
-        }
-    }    
-
-    return bs;
 }
 
 std::vector<Cycle> Triangle::get_external_bisectors() const {
@@ -1038,10 +1004,6 @@ std::vector<Cycle> Triangle::get_cevians(const Point& P) const {
 
 std::vector<Cycle> Triangle::get_altitudes() const {
     return {split(bb, cc, cos(beta), -cos(gamma)), split(cc, aa, cos(gamma), -cos(alpha)), split(aa, bb, cos(alpha), -cos(beta))};
-    std::vector<Point> AA = bb ^ cc;
-    std::vector<Point> BB = aa ^ cc;
-    std::vector<Point> CC = aa ^ bb;
-    return {orthogonal(aa, AA[0], AA[1]), orthogonal(bb, BB[0], BB[1]), orthogonal(cc, CC[0], CC[1])};
 }
 
 void Triangle::compute_inexcircles() {

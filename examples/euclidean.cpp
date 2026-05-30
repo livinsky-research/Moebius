@@ -27,7 +27,7 @@ bool excircles = false;
 bool lemoine = false;
 bool toricelli = false;
 bool kiepert = false;
-bool apollonius = false;
+bool apollo = false;
 bool braxis = false;
 
 double alpha_;
@@ -185,7 +185,6 @@ void myGlutDisplay() {
     line(A, B);  
     line(B, C);  
     line(A, C);  
-      
 
     if (euler) {
         glColor3d(0.0, 0.7, 0.0);    
@@ -381,7 +380,7 @@ void myGlutDisplay() {
         
         glEnd();
     }
-    if (apollonius) {
+    if (apollo) {
         glColor3d(0.8, 0.8, 0.0);
         Point A1 = Barycentric(A, B, C, a * sin(alpha_ + M_PI / 3), b * sin(beta_ + M_PI / 3), c * sin(gamma_ + M_PI / 3));
         Point A2 = Barycentric(A, B, C, a * sin(alpha_ - M_PI / 3), b * sin(beta_ - M_PI / 3), c * sin(gamma_ - M_PI / 3));
@@ -455,7 +454,7 @@ void kiepert_cb(int control) {
 }
 
 void apollonius_cb(int control) {
-    apollonius = !apollonius;
+    apollo = !apollo;
     glutPostRedisplay();
 }
 

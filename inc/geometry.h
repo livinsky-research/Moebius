@@ -118,6 +118,7 @@ double cos(const Cycle& X, const Cycle& Y);
 
 double operator*(const Cycle& X, const Cycle& Y);
 
+double splitting(const Cycle& X, const Cycle& Y, const Cycle& Z);
 Cycle split(const Cycle& X, const Cycle& Y, double lambda);
 Cycle split(const Cycle& X, const Cycle& Y, double x, double y);
 
@@ -166,13 +167,12 @@ public:
 
     void recompute();
     void compute_inexcircles();
-    
-    double area() const;
 
     void draw() const;
     void draw_body() const;
     void draw_bisectors() const;
     void draw_altitudes() const;
+    void draw_omegas() const;
     void draw_pseudoaltitudes() const;
     void draw_circumcircle() const;
     void draw_incircle() const;

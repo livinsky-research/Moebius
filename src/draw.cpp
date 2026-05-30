@@ -179,7 +179,6 @@ void arc(const Point& A, const Point& B, double alpha) {
 }
 
 void Point::draw() const {
-	static float angle_theta;
 	glBegin(GL_POLYGON);
 	circle(*this, point_rad);
 	glEnd();    
@@ -443,6 +442,13 @@ void Triangle::draw_altitudes() const {
         hh.draw();
     }
 }  
+
+void Triangle::draw_omegas() const {
+    glColor3d(0.5, 0.0, 0.5);
+    omega_a.draw();
+    omega_b.draw();
+    omega_c.draw();
+}
 
 void Triangle::draw_pseudoaltitudes() const {
     //Ha.draw();
