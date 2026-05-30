@@ -1,8 +1,32 @@
 # Möbius
 
+[![arXiv](https://img.shields.io/badge/arXiv-2605.29905-b31b1b.svg)](https://arxiv.org/abs/2605.29905)
+
 A C++ library and collection of interactive visualizations for **Möbius (inversive) geometry** in the plane. The same algebraic model represents Euclidean lines and circles, hyperbolic geodesics in the Poincaré disk, triangle centers, and classical incidence theorems—so you can drag vertices, change angles, and watch bisectors, incircles, and Ceva ratios update in real time.
 
-The project pairs a small computational core (`moebius` static library) with GLUT/GLUI demos.
+The project pairs a small computational core (`moebius` static library) with GLUT/GLUI demos. Companion Jupyter notebooks explore related formulas symbolically.
+
+## Companion paper
+
+This code accompanies the paper
+
+> **Ivan Livinsky.** *On Ceva's and Menelaus's Theorems for a Möbius triangle.* arXiv preprint, 2026. [arXiv:2605.29905](https://arxiv.org/abs/2605.29905)
+
+The paper generalizes the classical Ceva and Menelaus theorems to curvilinear triangles bounded by circular arcs, introduces trilinear coordinates for such triangles, and defines the incenter, excenters, and orthocenter for any proper Möbius triangle. The demos in this repository illustrate those constructions interactively—see the `ceva*`, `menelaus`, `triangle`, and `proper` examples in particular.
+
+If you use this code in academic work, please cite the paper:
+
+```bibtex
+@misc{livinsky2026moebius,
+  author       = {Ivan Livinsky},
+  title        = {On Ceva's and Menelaus's Theorems for a M\"obius triangle},
+  year         = {2026},
+  eprint       = {2605.29905},
+  archivePrefix= {arXiv},
+  primaryClass = {math.MG},
+  url          = {https://arxiv.org/abs/2605.29905}
+}
+```
 
 ---
 
@@ -133,7 +157,7 @@ Include `inc/` and call `Triangle::recompute()` before any `draw_*()` method.
 
 ## Design notes
 
-- **Angles vs. positions.** Vertex positions fix the Euclidean shape; $\alpha,\beta,\gamma$ impose the Möbius (or hyperbolic) angle data used to place oriented side cycles. That separation is what lets the demos explore non-Euclidean angle assignments while still drawing in the plane.
+- **Angles vs. positions.** Vertex positions fix the Euclidean shape; \(\alpha,\beta,\gamma\) impose the Möbius (or hyperbolic) angle data used to place oriented side cycles. That separation is what lets the demos explore non-Euclidean angle assignments while still drawing in the plane.
 - **Orientation.** `Orientation` (`ABC` / `ACB`) tracks winding; side cycles and fills in `draw_body()` depend on it.
 - **New demos.** Copy `examples/triangle.cpp`, link against `moebius`, and use external `bool` flags with `draw_*()` toggles rather than storing display state on `Triangle`.
 
