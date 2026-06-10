@@ -258,12 +258,23 @@ void myGlutDisplay() {
     }
     if (kiepert) {
         glColor3d(0.0, 0.3, 0.0);        
-        glBegin(GL_LINE_LOOP);
+        glBegin(GL_LINE_STRIP);
+        double cot_omega = (a * a + b * b + c * c) / 4 / S;
+        double phi1 = atan(-cot_omega - sqrt(cot_omega * cot_omega - 3));
+        double phi2 = atan(-cot_omega + sqrt(cot_omega * cot_omega - 3));
+        double eps = 1e-5;
         for (int i = 0; i < 1000; i++) {
-            double theta = M_PI / 1000 * i;
+            double theta = phi1 + (phi2 - phi1 - eps) / 1000 * i + eps;
             Point Ti = Barycentric(A, B, C, a / sin(alpha_ + theta), b / sin(beta_ + theta), c / sin(gamma_ + theta));
             glVertex3d(Ti.x, sy - Ti.y, 0);
         }
+        glEnd();
+        glBegin(GL_LINE_STRIP);
+        for (int i = 0; i < 1000; i++) {
+            double theta = phi2 + (M_PI + phi1 - phi2 - eps) / 1000 * i + eps;
+            Point Ti = Barycentric(A, B, C, a / sin(alpha_ + theta), b / sin(beta_ + theta), c / sin(gamma_ + theta));
+            glVertex3d(Ti.x, sy - Ti.y, 0);
+        }        
 	    glEnd();
     }
     
