@@ -175,6 +175,7 @@ public:
     void draw_omegas() const;
     void draw_pseudoaltitudes() const;
     void draw_circumcircle() const;
+    void draw_circumcenter() const;
     void draw_incircle() const;
     void draw_excircles() const;
     void draw_euler_circle() const;

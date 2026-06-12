@@ -467,6 +467,30 @@ void Triangle::draw_circumcircle() const {
     circumcircle.draw();
 }
 
+void Triangle::draw_circumcenter() const {
+    double a = sin((-alpha + beta + gamma) / 2);
+    double b = sin((alpha - beta + gamma) / 2);
+    double c = sin((alpha + beta - gamma) / 2);
+
+    Cycle oa = cycle(0, c, -b);
+    Cycle ob = cycle(c, 0, -a);
+    Cycle oc = cycle(b, -a, 0);
+    
+    Cycle pa = beta != gamma ? cycle(sin(gamma - beta), -sin(beta), sin(gamma)) : cycle(0, -1, 1);
+    Cycle pb = alpha != gamma ? cycle(sin(alpha), sin(alpha - gamma), -sin(gamma)) : cycle(1, 0, -1);
+    Cycle pc = alpha != beta ? cycle(sin(alpha), -sin(beta), sin(alpha - beta)) : cycle(1, -1, 0);
+
+    glColor3d(0.0, 0.0, 1.0);
+    oa.draw();
+    ob.draw();
+    oc.draw();
+    
+    glColor3d(0.0, 0.0, 0.9);
+    pa.draw();
+    pb.draw();
+    pc.draw();
+}
+
 void Triangle::draw_incircle() const {
     glColor3d(1.0, 0.5, 0.0);
     for (const Cycle& incircle : incircles) {

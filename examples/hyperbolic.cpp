@@ -25,6 +25,7 @@ bool bisectors = false;
 bool altitudes = false;
 bool pseudoaltitudes = false;
 bool circumcircle = false;
+bool circumcenter = false;
 bool incircle = false;
 bool excircles = false;
 bool euler = false;
@@ -139,7 +140,10 @@ void myGlutDisplay() {
     } 
     if (circumcircle) {
         T.draw_circumcircle();
-    } 
+    }
+    if (circumcenter) {
+        T.draw_circumcenter();
+    }
     if (incircle) {
         T.draw_incircle();
     } 
@@ -182,6 +186,11 @@ void pseudoaltitudes_cb(int control) {
 
 void circumcircle_cb(int control) {
     circumcircle = !circumcircle;
+    glutPostRedisplay();
+}
+
+void circumcenter_cb(int control) {
+    circumcenter = !circumcenter;
     glutPostRedisplay();
 }
 
@@ -236,6 +245,7 @@ int main(int argc, char* argv[]) {
     new GLUI_Checkbox(glui, "Altitudes", 0, 0, altitudes_cb);
     new GLUI_Checkbox(glui, "Pseudoaltitudes", 0, 0, pseudoaltitudes_cb); 
     new GLUI_Checkbox(glui, "Circumcircle", 0, 0, circumcircle_cb);
+    new GLUI_Checkbox(glui, "Circumcenter", 0, 0, circumcenter_cb);    
     new GLUI_Checkbox(glui, "Incircle", 0, 0, incircle_cb);
     new GLUI_Checkbox(glui, "Excircles", 0, 0, excircles_cb);
     new GLUI_Checkbox(glui, "Euler circle", 0, 0, euler_cb);
