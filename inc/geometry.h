@@ -172,6 +172,7 @@ public:
     void draw_body() const;
     void draw_bisectors() const;
     void draw_altitudes() const;
+    void draw_medians() const;
     void draw_omegas() const;
     void draw_pseudoaltitudes() const;
     void draw_circumcircle() const;
@@ -185,6 +186,7 @@ public:
     Cycle cycle(double x, double y, double z) const;
     std::vector<Cycle> get_sides() const;
     std::vector<Cycle> get_bisectors() const;
+    std::vector<Cycle> get_medians() const;
     std::vector<Cycle> get_external_bisectors() const;   
     std::vector<Cycle> get_cevians(const Point& X, const Point& Y, const Point& Z) const;
     std::vector<Cycle> get_cevians(const Point& P) const;

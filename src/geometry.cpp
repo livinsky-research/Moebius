@@ -1006,6 +1006,10 @@ std::vector<Cycle> Triangle::get_altitudes() const {
     return {split(bb, cc, cos(beta), -cos(gamma)), split(cc, aa, cos(gamma), -cos(alpha)), split(aa, bb, cos(alpha), -cos(beta))};
 }
 
+std::vector<Cycle> Triangle::get_medians() const {
+    return {split(bb, cc, sin(beta), -sin(gamma)), split(cc, aa, sin(gamma), -sin(alpha)), split(aa, bb, sin(alpha), -sin(beta))};
+}
+
 void Triangle::compute_inexcircles() {
     std::vector<Cycle> all_tangent = apollonius(aa, bb, cc);
     std::vector<Cycle> bs = get_bisectors();

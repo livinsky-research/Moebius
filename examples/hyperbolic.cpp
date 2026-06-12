@@ -23,6 +23,7 @@ int gamma_ = 60;
 
 bool bisectors = false;
 bool altitudes = false;
+bool medians = false;
 bool pseudoaltitudes = false;
 bool circumcircle = false;
 bool circumcenter = false;
@@ -134,7 +135,10 @@ void myGlutDisplay() {
     } 
     if (altitudes) {
         T.draw_altitudes();
-    } 
+    }
+    if (medians) {
+        T.draw_medians();
+    }    
     if (pseudoaltitudes) {
         T.draw_pseudoaltitudes();
     } 
@@ -176,6 +180,11 @@ void bisectors_cb(int control) {
 
 void altitudes_cb(int control) {
     altitudes = !altitudes;
+    glutPostRedisplay();
+}
+
+void medians_cb(int control) {
+    medians = !medians;
     glutPostRedisplay();
 }
 
@@ -243,6 +252,7 @@ int main(int argc, char* argv[]) {
     
     new GLUI_Checkbox(glui, "Bisectors", 0, 0, bisectors_cb);
     new GLUI_Checkbox(glui, "Altitudes", 0, 0, altitudes_cb);
+    new GLUI_Checkbox(glui, "Medians", 0, 0, medians_cb);    
     new GLUI_Checkbox(glui, "Pseudoaltitudes", 0, 0, pseudoaltitudes_cb); 
     new GLUI_Checkbox(glui, "Circumcircle", 0, 0, circumcircle_cb);
     new GLUI_Checkbox(glui, "Circumcenter", 0, 0, circumcenter_cb);    

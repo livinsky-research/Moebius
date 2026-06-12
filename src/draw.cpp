@@ -441,7 +441,15 @@ void Triangle::draw_altitudes() const {
         Cycle hh = hperpendicular(altitudes[0], altitudes[2]);
         hh.draw();
     }
-}  
+}
+
+void Triangle::draw_medians() const {
+    const auto medians = get_medians();   
+    glColor3d(0.0, 1.0, 0.0);
+    for (const auto& m : medians) {
+         m.draw();             
+    }
+}
 
 void Triangle::draw_omegas() const {
     glColor3d(0.5, 0.0, 0.5);
