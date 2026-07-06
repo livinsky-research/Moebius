@@ -457,21 +457,15 @@ void Triangle::draw_omegas() const {
 }
 
 void Triangle::draw_pseudoaltitudes() const {
-    //Ha.draw();
-    //Hb.draw();
-    //Hc.draw();
     glColor3d(1.0, 0.0, 0.0);     
-    auto pseudoaltitudes = get_cevians(Ha, Hb, Hc);
-    for (const auto& p : pseudoaltitudes) {
-         p.draw();
-    }
-    pseudoaltitudes = get_pseudoaltitudes();
+    const auto pseudoaltitudes = get_pseudoaltitudes();
     for (const auto& p : pseudoaltitudes) {
          p.draw();
     }
 }
 
 void Triangle::draw_pseudomedians() const {
+    glColor3d(0.0, 0.3, 0.0);  
     const auto pseudomedians = get_pseudomedians();
     for (const auto& p : pseudomedians) {
          p.draw();
