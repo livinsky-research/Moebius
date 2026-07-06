@@ -1006,6 +1006,20 @@ std::vector<Cycle> Triangle::get_altitudes() const {
     return {split(bb, cc, cos(beta), -cos(gamma)), split(cc, aa, cos(gamma), -cos(alpha)), split(aa, bb, cos(alpha), -cos(beta))};
 }
 
+std::vector<Cycle> Triangle::get_pseudoaltitudes() const {
+    double x = (-alpha + beta + gamma) / 2;
+    double y = (alpha - beta + gamma) / 2;
+    double z = (alpha + beta - gamma) / 2;
+    return {split(bb, cc, cos(beta) + sin(y), -cos(gamma) - sin(z)), split(cc, aa, cos(gamma) + sin(z), -cos(alpha) - sin(x)), split(aa, bb, cos(alpha) + sin(x), -cos(beta) - sin(y))};
+}
+
+std::vector<Cycle> Triangle::get_pseudomedians() const {
+    double x = (-alpha + beta + gamma) / 2;
+    double y = (alpha - beta + gamma) / 2;
+    double z = (alpha + beta - gamma) / 2;
+    return {split(bb, cc, cos(beta) - sin(y), -cos(gamma) + sin(z)), split(cc, aa, cos(gamma) - sin(z), -cos(alpha) + sin(x)), split(aa, bb, cos(alpha) - sin(x), -cos(beta) + sin(y))};
+}
+
 std::vector<Cycle> Triangle::get_medians() const {
     return {split(bb, cc, sin(beta), -sin(gamma)), split(cc, aa, sin(gamma), -sin(alpha)), split(aa, bb, sin(alpha), -sin(beta))};
 }

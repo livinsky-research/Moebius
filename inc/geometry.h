@@ -175,6 +175,7 @@ public:
     void draw_medians() const;
     void draw_omegas() const;
     void draw_pseudoaltitudes() const;
+    void draw_pseudomedians() const;    
     void draw_circumcircle() const;
     void draw_circumcenter() const;
     void draw_incircle() const;
@@ -191,6 +192,8 @@ public:
     std::vector<Cycle> get_cevians(const Point& X, const Point& Y, const Point& Z) const;
     std::vector<Cycle> get_cevians(const Point& P) const;
     std::vector<Cycle> get_altitudes() const;
+    std::vector<Cycle> get_pseudoaltitudes() const;
+    std::vector<Cycle> get_pseudomedians() const;
     
     Cycle aa;
     Cycle bb;
