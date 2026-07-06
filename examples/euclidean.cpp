@@ -257,7 +257,7 @@ void myGlutDisplay() {
         L.draw();
     }
     if (kiepert) {
-        glColor3d(0.0, 0.3, 0.0);        
+        glColor3d(0.0, 0.3, 0.0);
         glBegin(GL_LINE_STRIP);
         double cot_omega = (a * a + b * b + c * c) / 4 / S;
         double phi1 = atan(-cot_omega - sqrt(cot_omega * cot_omega - 3));
@@ -274,10 +274,9 @@ void myGlutDisplay() {
             double theta = phi2 + (M_PI + phi1 - phi2 - eps) / 1000 * i + eps;
             Point Ti = Barycentric(A, B, C, a / sin(alpha_ + theta), b / sin(beta_ + theta), c / sin(gamma_ + theta));
             glVertex3d(Ti.x, sy - Ti.y, 0);
-        }        
-	    glEnd();
+        }
+        glEnd();
     }
-    
     if (toricelli) {
         glColor3d(0.0, 0.3, 0.0);
         Point T1 = Barycentric(A, B, C, a / sin(alpha_ + M_PI / 3), b / sin(beta_ + M_PI / 3), c / sin(gamma_ + M_PI / 3));
@@ -293,102 +292,6 @@ void myGlutDisplay() {
             Point Ai = Barycentric(A, B, C, a * sin(alpha_ + theta), b * sin(beta_ + theta), c * sin(gamma_ + theta));
             glVertex3d(Ai.x, sy - Ai.y, 0);
         }
-        glEnd();    
-        
-        auto sqr = [](double x) {return x*x;};
-        
-        /*double b0 = (sqr(sin(alpha_)) + sqr(sin(beta_)) + sqr(sin(gamma_))) / sin(alpha_) / sin(beta_) / sin(gamma_);
-        double D = sqrt(sqr(b0) - 12);
-        
-        double t1 = (-b0 - D) / 2;
-        double t2 = (-b0 + D) / 2;
-        
-        Point X1 = Trilinear(A, B, C, sin(alpha_) + t1 * cos(alpha_), sin(beta_) + t1 * cos(beta_), sin(gamma_) + t1 * cos(gamma_));
-        Point X2 = Trilinear(A, B, C, sin(alpha_) + t2 * cos(alpha_), sin(beta_) + t2 * cos(beta_), sin(gamma_) + t2 * cos(gamma_));
-        
-        double x1 = sin(alpha_) + t1 * cos(alpha_);
-        double y1 = sin(beta_) + t1 * cos(beta_);
-        double z1 = sin(gamma_) + t1 * cos(gamma_);
-
-        double x2 = sin(alpha_) + t2 * cos(alpha_);
-        double y2 = sin(beta_) + t2 * cos(beta_);
-        double z2 = sin(gamma_) + t2 * cos(gamma_);
-        
-        //double zero = (x2 * cos(gamma_)+y2) * sin(gamma_ - alpha_) * sqr(y1)+  (x2*cos(beta_)+z2) * sin(alpha_ - beta_)* sqr(z1);
-        double zero = (x1 * cos(gamma_)+y1) * sin(gamma_ - alpha_) * sqr(y2)+  (x1*cos(beta_)+z1) * sin(alpha_ - beta_)* sqr(z2);*/
-        
-        double x0 = 11;
-        double y0 = 1.33;
-        double z0 = 5.24;
-        
-        double AA = y0*z0*sin(alpha_) + x0*z0*sin(beta_) + x0*y0*sin(gamma_);
-        double BB = x0*sin(alpha_) + y0*sin(beta_) + z0*sin(gamma_);
-        double CC = sin(alpha_) * sin(beta_) * sin(gamma_);
-        double D = sqrt(BB*BB - 4*AA*CC);
-        
-        double t1 = (-BB - D) / 2 / AA;
-        double t2 = (-BB + D) / 2 / AA;
-        
-        double x1 = cos(alpha_) + t1 * x0;
-        double y1 = cos(beta_) + t1 * y0;
-        double z1 = cos(gamma_) + t1 * z0;
-
-        double x2 = cos(alpha_) + t2 * x0;
-        double y2 = cos(beta_) + t2 * y0;
-        double z2 = cos(gamma_) + t2 * z0;
-        
-        x0 = x1;
-        y0 = y1;
-        z0 = z1;
-        
-        double t = -(x0*sin(alpha_) + y0*sin(beta_) + z0*sin(gamma_)) / sin(alpha_) / sin(beta_) / sin(gamma_);
-        
-        x2 = x0 + t * cos(alpha_);
-        y2 = y0 + t * cos(beta_);
-        z2 = z0 + t * cos(gamma_);        
-        
-        //double zero = (x1 * cos(gamma_)+y1) * (x0*cos(gamma_)-z0*cos(alpha_)) * sqr(y2)+  (x1*cos(beta_)+z1) * (y0*cos(alpha_) - x0*cos(beta_))* sqr(z2);     
-        //double zero = (x0 * cos(gamma_)+y0) * (x0*cos(gamma_)-z0*cos(alpha_)) * sqr(y2)+  (x0*cos(beta_)+z0) * (y0*cos(alpha_) - x0*cos(beta_))* sqr(z2);  
-        //double zero = (x0*cos(gamma_) -z0*cos(alpha_))* sqr(y0)*(x0*cos(beta_)+z0)*sqr(sin(gamma_))+(y0*cos(alpha_) - x0*cos(beta_))*sqr(z0)*(x0*cos(gamma_) +y0)*sqr(sin(beta_));
-        //zero = x0*y0*sin(gamma_) + x0*z0*sin(beta_) + y0*z0*sin(alpha_);//WORKED!                
-        //std::cout << "ZERO " << zero << std::endl;
-        
-        for (double s = 2; s < 10; s++) {
-		    
-		    double xp = x0 + s * x2;
-		    double yp = y0 + s * y2;
-		    double zp = z0 + s * z2;
-		    
-		    double xm = x0 - s * x2;
-		    double ym = y0 - s * y2;
-		    double zm = z0 - s * z2;
-		    
-		    Point Pp = Trilinear(A, B, C, 1/xp, 1/yp, 1/zp); 
-		    Point Pm = Trilinear(A, B, C, 1/xm, 1/ym, 1/zm);
-		    
-		    //line(Pp, Pm);
-		    
-		    //Pp.draw();
-		    //Pm.draw();
-		    
-		    //Point Px = Trilinear(A, B, C, 0, x1 * cos(gamma_)+y1, x1 * cos(beta_)+z1);
-		    //Point Py = Trilinear(A, B, C, y1 * cos(gamma_)+x1, 0, y1 * cos(alpha_)+z1);
-		    //Point Pz = Trilinear(A, B, C, z1 * cos(beta_)+x1, z1 * cos(alpha_)+y1, 0);
-		    
-		    //Px.draw();
-		    //Py.draw();
-		    //Pz.draw();
-		    
-		    //Point P0 = Trilinear(A, B, C, x0, y0, z0);
-		    //Point P2 = Trilinear(A, B, C, x2, y2, z2);
-		    
-		    //line(Px, Py);
-		    //line(Py, Pz);
-
-		    //P0.draw();
-		    //P2.draw();
-		}
-        
         glEnd();
     }
     if (apollo) {
@@ -400,7 +303,6 @@ void myGlutDisplay() {
     }
     
     for (const Point& P : points) {
-        //Point Q = {mouse.x, sy - mouse.y};    
 		if (dist(P, mouse) <= point_rad) {    
 		    glColor3d(1.0, 0.3, 0.3);
 		} else {

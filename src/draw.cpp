@@ -463,8 +463,19 @@ void Triangle::draw_pseudoaltitudes() const {
     //Hb.draw();
     //Hc.draw();
     glColor3d(1.0, 0.0, 0.0);     
-    const auto pseudoaltitudes = get_cevians(Ha, Hb, Hc);
+    auto pseudoaltitudes = get_cevians(Ha, Hb, Hc);
     for (const auto& p : pseudoaltitudes) {
+         p.draw();
+    }
+    pseudoaltitudes = get_pseudoaltitudes();
+    for (const auto& p : pseudoaltitudes) {
+         p.draw();
+    }
+}
+
+void Triangle::draw_pseudomedians() const {
+    const auto pseudomedians = get_pseudomedians();
+    for (const auto& p : pseudomedians) {
          p.draw();
     }
 }
