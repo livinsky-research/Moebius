@@ -12,14 +12,12 @@ extern double point_rad;// = 5;
 extern int sx; // = 800;
 extern int sy; // = 600;
 
-//float angles[3]{M_PI / 4, M_PI / 4, M_PI / 4};
-
 std::vector<Point> points = {{300, 100}, {300, 500}, {600, 300}};
 bool pressed[3] = {false, false, false};
 
-int alpha_ = 45;
-int beta_ = 45;
-int gamma_ = 45;
+int alpha_ = 90;
+int beta_ = 60;
+int gamma_ = 30;
 
 bool bisectors = false;
 bool altitudes = false;
@@ -35,7 +33,7 @@ bool euler = false;
 Point& A = points[0];
 Point& B = points[1];
 Point& C = points[2];
-Triangle T(A, B, C, M_PI / 4, M_PI / 4, M_PI / 4);
+Triangle T(A, B, C, M_PI / 2, M_PI / 3, M_PI / 6);
 Point mouse;
 
 int main_window;
