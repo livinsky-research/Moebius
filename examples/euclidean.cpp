@@ -20,7 +20,8 @@ bool pressed[3] = {false, false, false};
 bool bisectors = false;
 bool altitudes = false;
 bool medians = false;
-bool euler = false;
+bool euler_line = false;
+bool euler_circle = false;
 bool circumcircle = false;
 bool incircle = false;
 bool excircles = false;
@@ -186,12 +187,20 @@ void myGlutDisplay() {
     line(B, C);  
     line(A, C);  
 
-    if (euler) {
+    if (euler_circle) {
         glColor3d(0.0, 0.7, 0.0);    
         Point O = Barycentric(A, B, C, a * cosa, b * cosb, c * cosc);
         Point H = Barycentric(A, B, C, (a*a + c*c - b*b) * (a*a + b*b - c*c), (b*b + c*c - a*a) * (a*a + b*b - c*c), (b*b + c*c - a*a) * (a*a + c*c - b*b));
         Point E = O * H;
         circle(E, R / 2);
+    }
+    if (euler_line) {
+        glColor3d(0.0, 0.7, 0.0);    
+        Point O = Barycentric(A, B, C, a * cosa, b * cosb, c * cosc);
+        Point H = Barycentric(A, B, C, (a*a + c*c - b*b) * (a*a + b*b - c*c), (b*b + c*c - a*a) * (a*a + b*b - c*c), (b*b + c*c - a*a) * (a*a + c*c - b*b));
+        
+        Vector v = (H - O).normalize();
+        line(O - 2000 * v, O + 2000 * v);
     }
     if (medians) {
         Point M = Barycentric(A, B, C, 1, 1, 1);
@@ -227,8 +236,28 @@ void myGlutDisplay() {
         Lb.draw();
         Lc.draw();
     }
+    if (altitudes) {
+        glColor3d(1.0, 0.5, 0.0);
+            
+        Point Ha = cosa == 0? A : Barycentric(A, B, C, 0, cosc * sinb, cosb * sinc);
+        Point Hb = cosb == 0? B : Barycentric(A, B, C, cosc * sina, 0, cosa * sinc);
+        Point Hc = cosc == 0? C : Barycentric(A, B, C, cosb * sina, cosa * sinb, 0);
+        Point H = cosa==0? A: cosb == 0? B : cosc == 0? C: Barycentric(A, B, C, sina / cosa, sinb / cosb,  sinc / cosc);
+        
+        line(A, Ha);
+        line(B, Hb);
+        line(C, Hc);
+        line(H, Ha);
+        line(H, Hb);
+        line(H, Hc);        
+
+        H.draw();
+        Ha.draw();
+        Hb.draw();
+        Hc.draw();    
+    }
     if (incircle) {
-        glColor3d(0.4, 0.0, 0.0);    
+        glColor3d(1.0, 0.5, 0.0);  
         Point I = Barycentric(A, B, C, a, b, c);
         I.draw();
         circle(I, r);
@@ -346,8 +375,13 @@ void excircles_cb(int control) {
     glutPostRedisplay();
 }
 
-void euler_cb(int control) {
-    euler = !euler;
+void euler_line_cb(int control) {
+    euler_line = !euler_line;
+    glutPostRedisplay();
+}
+
+void euler_circle_cb(int control) {
+    euler_circle = !euler_circle;
     glutPostRedisplay();
 }
 
@@ -414,7 +448,8 @@ int main(int argc, char* argv[]) {
     new GLUI_Checkbox(glui, "Circumcircle", 0, 0, circumcircle_cb);    
     new GLUI_Checkbox(glui, "Incircle", 0, 0, incircle_cb);
     new GLUI_Checkbox(glui, "Excircles", 0, 0, excircles_cb);
-    new GLUI_Checkbox(glui, "Euler circle", 0, 0, euler_cb);
+    new GLUI_Checkbox(glui, "Euler line", 0, 0, euler_line_cb);    
+    new GLUI_Checkbox(glui, "Euler circle", 0, 0, euler_circle_cb);
     new GLUI_Checkbox(glui, "Lemoine point", 0, 0, lemoine_cb);   
     new GLUI_Checkbox(glui, "Toricelli (isogonic) points", 0, 0, toricelli_cb);
     new GLUI_Checkbox(glui, "Kiepert hyperbola", 0, 0, kiepert_cb);
