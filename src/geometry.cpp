@@ -210,12 +210,12 @@ Cycle::Cycle(const Point& A, const Point& B, double alpha) {
         return;
     }
     
-	double dd = dist(A, B);
-	double t = dd / 2 / tan(alpha);
-	O.x = (A.x + B.x) / 2 + (B.y - A.y) / dd * t;
-	O.y = (A.y + B.y) / 2 + (A.x - B.x) / dd * t;
+    double dd = dist(A, B);
+    double t = dd / 2 / tan(alpha);
+    O.x = (A.x + B.x) / 2 + (B.y - A.y) / dd * t;
+    O.y = (A.y + B.y) / 2 + (A.x - B.x) / dd * t;
 
-	R = dd / 2 / sin(alpha);
+    R = dd / 2 / sin(alpha);
 	
     a = 1;
     b = -2 * O.x;
@@ -267,6 +267,10 @@ Cycle::Cycle(const Point& A, const Point& B, const Point& C) {
     b = -2 * O.x;
     c = -2 * O.y;
     d = -R * R + O.x * O.x + O.y * O.y;
+}
+
+double Cycle::operator()(const Point& A) const {
+    return a * (A.x*A.x + A.y * A.y) + b * A.x + c * A.y + d;
 }
 
 Point Cycle::sample() const {
@@ -856,6 +860,9 @@ Cycle split(const Cycle& X, const Cycle& Y, double x, double y) {
     return {a, b, c, d};
 }
 
+Cycle split(const Cycle& X, const Cycle& Y, const Point& A) {
+    return split(X, Y, Y(A), -X(A));
+}
 
 Orientation operator!(const Orientation& orient) {
     return orient == ABC? ACB : ABC;
@@ -992,10 +999,7 @@ std::vector<Cycle> Triangle::get_external_bisectors() const {
 }
 
 std::vector<Cycle> Triangle::get_cevians(const Point& X, const Point& Y, const Point& Z) const {
-    std::vector<Point> AA = bb ^ cc;
-    std::vector<Point> BB = aa ^ cc;
-    std::vector<Point> CC = aa ^ bb;
-    return {Cycle(AA[0], X, AA[1]), Cycle(BB[0], Y, BB[1]), Cycle(CC[0], Z, CC[1])};
+    return {split(bb, cc, X), split(aa, cc, Y), split(bb, cc, Z)};
 }
 
 std::vector<Cycle> Triangle::get_cevians(const Point& P) const {

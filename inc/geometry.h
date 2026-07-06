@@ -73,6 +73,8 @@ struct Cycle {
     double R;
     Point O;
     bool virt = false;
+    
+    double operator()(const Point& A) const;
 
     Cycle() = default;
     Cycle(const Point& A, double b, double c);
@@ -121,6 +123,7 @@ double operator*(const Cycle& X, const Cycle& Y);
 double splitting(const Cycle& X, const Cycle& Y, const Cycle& Z);
 Cycle split(const Cycle& X, const Cycle& Y, double lambda);
 Cycle split(const Cycle& X, const Cycle& Y, double x, double y);
+Cycle split(const Cycle& X, const Cycle& Y, const Point& A);
 
 //generate tikz code for latex
 void write_point(const Point& A);
